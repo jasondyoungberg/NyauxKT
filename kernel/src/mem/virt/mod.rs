@@ -206,7 +206,7 @@ impl PageMap
                     for e in 0..page_amount
                     {
                         q.map(
-                            HDDM_OFFSET.get_response().unwrap().offset() + (e * 4096) as u64,
+                            HDDM_OFFSET.get_response().unwrap().offset() + i.base + (e * 4096) as u64,
                             i.base + (e * 4096) as u64,
                             VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()
                         ).unwrap()
@@ -217,6 +217,7 @@ impl PageMap
                 }
             }
         }
-        q.switch_to();
+        println!("DONE");
+        // q.switch_to();
     }
 }
