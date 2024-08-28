@@ -174,7 +174,7 @@ impl PageMap
     {
         let mut q = PageMap {
             head: None,
-            rootpagetable: unsafe {PMM.alloc().unwrap()} as *mut u64,
+            rootpagetable: unsafe {PMM.alloc().unwrap() + HDDM_OFFSET.get_response().unwrap().offset()} as *mut u64,
         };
         unsafe {q.rootpagetable.write_bytes(0, 4096 / 8)};
         let size_pages = unsafe {&THE_REAL as *const _ as usize} / 4096;
