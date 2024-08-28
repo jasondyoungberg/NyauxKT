@@ -1,9 +1,10 @@
 use bitflags::{bitflags, Flags};
 use limine::{memory_map::EntryType, request::KernelAddressRequest};
+use owo_colors::OwoColorize;
 
 use crate::{mem::phys::MEMMAP, println};
 
-use super::phys::{HDDM_OFFSET, PMM};
+use super::phys::{align_up, HDDM_OFFSET, PMM};
 
 bitflags! {
     pub struct VMMFlags: u64 
@@ -16,6 +17,7 @@ bitflags! {
         const KTCACHEDISABLE = 1 << 4;
     }
 }
+#[derive(Debug)]
 struct VMMRegion
 {
     base: u64,
@@ -125,7 +127,7 @@ impl PageMap
         entry = 0;
         unsafe {
             (*((cur_table as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64).offset(lvl1table_index as isize)) = entry;
-            core::arch::asm!("invlpg {x}", x = out(reg) _);
+            core::arch::asm!("invlpg [{x}]", x = in(reg) from_virt, options(nostack, preserves_flags));
         }
         
 
@@ -170,13 +172,118 @@ impl PageMap
             in(reg) self.rootpagetable as u64,
         );}
     }
+    fn region_setup(&mut self, pages_in_hhdm: usize)
+    {
+        let mut k: Option<*mut VMMRegion> = None;
+        let mut h: Option<*mut VMMRegion> = None;
+        unsafe {
+            k = Some((PMM.alloc().unwrap() as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut VMMRegion);
+            h = Some((PMM.alloc().unwrap() as u64+ HDDM_OFFSET.get_response().unwrap().offset()) as *mut VMMRegion);
+            (*h.unwrap()).length = pages_in_hhdm as u64;
+            (*h.unwrap()).base = HDDM_OFFSET.get_response().unwrap().offset();
+            (*h.unwrap()).flags = VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits();
+            
+            self.head = h;
+            (*k.unwrap()).base = ADDR.get_response().unwrap().virtual_base();
+            (*k.unwrap()).length = unsafe {&THE_REAL as *const _ as usize} as u64;
+            (*k.unwrap()).flags = VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits();
+            (*h.unwrap()).next = k;
+            println!("Kernel Region: {:#?}", (*k.unwrap()));
+            println!("HHDM Region: {:#?}", (*h.unwrap()));
+        }
+    }
+    fn vmm_region_dealloc(&mut self, addr: u64)
+    {
+        let mut cur_node = self.head;
+        let mut prev_node: Option<*mut VMMRegion> = None;
+        while (cur_node.is_none() == false)
+        {
+            unsafe {
+                if (*cur_node.unwrap()).base == addr
+                {
+                    if (*cur_node.unwrap()).next.is_some()
+                    {
+                        (*prev_node.unwrap()).next = (*cur_node.unwrap()).next;
+                    }
+                    let num_of_pages = (*cur_node.unwrap()).length / 4096;
+                    for i in 0..num_of_pages
+                    {
+                        let mut phys = self.virt_to_phys((*cur_node.unwrap()).base + (i * 0x1000));
+                        self.unmap((*cur_node.unwrap()).base + (i * 0x1000), 0).unwrap();
+                        phys = Ok(phys.unwrap() as u64 + HDDM_OFFSET.get_response().unwrap().offset());
+                        PMM.dealloc(phys.unwrap() as *mut u8).unwrap();
+                    }
+                    PMM.dealloc(cur_node.unwrap() as *mut u8).unwrap();
+                    return;
+                }
+                else {
+                    prev_node = cur_node;
+                    cur_node = (*cur_node.unwrap()).next;
+                    continue;
+                }
+            }
+            
+        }
+    }
+    fn vmm_region_alloc(&mut self, size: u64, flags: u64) -> Option<*mut u8>
+    {
+        let mut cur_node = self.head;
+        let mut prev_node = None;
+        while (cur_node.is_none() == false)
+        {
+            if prev_node.is_none()
+            {
+                prev_node = cur_node;
+                unsafe {
+                    cur_node = (*cur_node.unwrap()).next;
+                }
+                
+                continue;
+            }
+            unsafe {
+                if ((*cur_node.unwrap()).base - ((*prev_node.unwrap()).base + (*prev_node.unwrap()).length)) >= align_up(size as usize, 4096) as u64 + 0x1000
+                {
+                    let mut new_guy = (PMM.alloc().unwrap() as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut VMMRegion;
+                    (*new_guy).base = (*prev_node.unwrap()).base + (*prev_node.unwrap()).length;
+                    (*new_guy).length = align_up(size as usize, 4096) as u64;
+                    (*prev_node.unwrap()).next = Some(new_guy);
+                    (*new_guy).next = cur_node;
+                    let amou = align_up(size as usize, 4096) / 4096;
+                    for i in 0..amou
+                    {
+                        let mut e = PMM.alloc().unwrap();
+                        e = (e as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u8;
+                        e.write_bytes(0, 4096 / 8);
+                        e = (e as u64 - HDDM_OFFSET.get_response().unwrap().offset()) as *mut u8;
+                        self.map(
+                            (*new_guy).base + (i * 0x1000) as u64,
+                            e as u64,
+                            flags
+                        ).unwrap();
+                    }
+                    return Some((*new_guy).base as *mut u8);
+                }
+                else {
+                    prev_node = cur_node;
+                    
+                    cur_node = (*cur_node.unwrap()).next;
+                    
+                }
+            }
+            
+        }
+        panic!("nooo");
+        None
+    }
     pub fn new_inital()
     {
         let mut q = PageMap {
             head: None,
-            rootpagetable: unsafe {PMM.alloc().unwrap() + HDDM_OFFSET.get_response().unwrap().offset()} as *mut u64,
+            rootpagetable: unsafe {PMM.alloc().unwrap()} as *mut u64,
         };
+        q.rootpagetable = (q.rootpagetable as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
         unsafe {q.rootpagetable.write_bytes(0, 4096 / 8)};
+        q.rootpagetable = (q.rootpagetable as u64 - HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
         let size_pages = unsafe {&THE_REAL as *const _ as usize} / 4096;
         println!("Size of kernel in pages: {}", size_pages);
         println!("Kernel Location: phys: {:#x} virt: {:#x}", ADDR.get_response().unwrap().physical_base(), ADDR.get_response().unwrap().virtual_base());
@@ -189,8 +296,7 @@ impl PageMap
                 VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()).unwrap();
             
         }
-        println!("mapped the kernel i supposeeee");
-        println!("um");
+        println!("{}", "kernel mapped. mapping HHDM...".on_bright_magenta());
         let entries = MEMMAP.get_response().unwrap().entries();
         let mut hhdm_pages = 0;
         
@@ -211,13 +317,25 @@ impl PageMap
                             VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()
                         ).unwrap()
                     }
+                    hhdm_pages += page_amount;
                 }
                 _ => {
 
                 }
             }
         }
-        println!("DONE");
-        // q.switch_to();
+        q.switch_to();
+        q.region_setup(hhdm_pages);
+        let mut test = q.vmm_region_alloc(20204, VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()).unwrap();
+        unsafe {
+            *test = 5;
+            if *test == 5
+            {
+                println!("IT WORKED!!");
+                println!("deallocating");
+                q.vmm_region_dealloc(test as u64);
+                println!("WORKED");
+            }
+        }
     }
 }

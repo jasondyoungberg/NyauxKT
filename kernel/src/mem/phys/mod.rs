@@ -17,6 +17,85 @@ pub struct PhysicalAllocator
 {
     head: Option<*mut KTNode>
 }
+#[repr(C)]
+#[derive(PartialEq)]
+struct slab_header
+{
+    size: usize,
+    next_slab: Option<*mut slab_header>,
+    freelist: Option<*mut KTNode>
+}
+#[derive(PartialEq)]
+struct cache
+{
+    slabs: Option<*mut slab_header>,
+    size: usize
+}
+struct kmalloc_manager
+{
+    array: [cache; 8]
+}
+impl kmalloc_manager
+{
+    fn init() -> Self
+    {
+        let mut cache0 = cache::init(8);
+        let mut cache1 = cache::init(16);
+        let mut cache2 = cache::init(32);
+        let mut cache3 = cache::init(64);
+        let mut cache4 = cache::init(128);
+        let mut cache5 = cache::init(256);
+        let mut cache6 = cache::init(512);
+        let mut cache7 = cache::init(1024);
+        Self {
+            array: [cache0, cache1, cache2, cache3,
+            cache4, cache5, cache6, cache7]
+        }
+    }
+    fn free(&mut self, addr: u64)
+    {
+        if addr == 0
+        {
+            return;
+        }
+        let mut h = (addr & !0xFFF) as *mut slab_header;
+        let mut rightcache = None;
+        'outer: for i in self.array.iter_mut()
+        {
+            unsafe {
+                if (i.size == (*h).size)
+                {
+                    rightcache = Some(i);
+                    break 'outer;
+                }
+            }
+            
+        }
+        if rightcache == None {
+            return;
+        }
+        let mut new = addr as *mut KTNode;
+        unsafe {
+            (*new).next = (*h).freelist;
+            (*h).freelist = Some(new);
+            let mut prev = None;
+            let mut shit = rightcache.unwrap().slabs;
+            while (shit != None)
+            {
+                if ((*shit.unwrap()) == *h)
+                {
+                    return;
+                }
+                else {
+                    prev = shit;
+                    shit = (*shit.unwrap()).next_slab;
+                }
+            }
+            (*prev.unwrap()).next_slab = Some(h);
+            return;
+        }
+    }
+}
 #[used]
 #[link_section = ".requests"]
 pub static HDDM_OFFSET: HhdmRequest = HhdmRequest::new();
@@ -32,6 +111,8 @@ pub fn align_down(addr: usize, align: usize) -> usize {
     addr & !(align - 1)
 }
 pub static mut PMM: PhysicalAllocator = PhysicalAllocator {head: None};
+pub static mut kmalloc_manager: Option<kmalloc_manager> = None;
+
 impl PhysicalAllocator
 {
     pub fn new() -> Result<(), &'static str>
@@ -72,7 +153,9 @@ impl PhysicalAllocator
         }
        ;
         new.head = last;
+
         unsafe {PMM = new};
+        unsafe {kmalloc_manager = Some(kmalloc_manager::init())}
         return Ok(())
     }
     pub fn alloc(&mut self) -> Result<*mut u8, KTError>
@@ -109,7 +192,76 @@ impl PhysicalAllocator
             (*node).next = self.head;
             self.head = Some(node);
         }
-        Err(KTError::NotImplmented)
+        Ok(())
     }
 
+}
+
+impl slab_header
+{
+    fn init(size: usize) -> *mut Self 
+    {
+        let mut area: *mut u64 = unsafe {PMM.alloc().unwrap() as *mut u64};
+        area = (area as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
+        unsafe {area.write_bytes(0, 4096 / 8)};
+        let mut header = (area) as *mut slab_header;
+        unsafe {
+            (*header).size = size;
+            header;
+            let obj_amount = (4096 - size_of::<slab_header>()) / size;
+            let mut start = (header as u64 + size_of::<slab_header>() as u64) as *mut KTNode;
+            (*header).freelist = Some(start);
+            let mut prev = start;
+            for i in 1..obj_amount
+            {
+                let mut new = (start as u64 + (i as u64 * size as u64)) as *mut KTNode;
+                (*prev).next = Some(new);
+                prev = new;
+            }
+        }
+        return header;
+    }
+}
+impl cache
+{
+    fn init(size: usize) -> Self
+    {
+        
+        let mut new = slab_header::init(size);
+        println!("Created Cache of size: {size}");
+        Self {size: size, slabs: Some(new)}
+    }
+    fn slab_allocsearch(&mut self) -> Option<*mut u8>
+    {
+        let mut h = self.slabs;
+       'outer: while h.is_none() == false
+        {
+            unsafe {
+                if (*h.unwrap()).freelist != None
+                {
+                    let mut new = (*h.unwrap()).freelist.unwrap();
+                    (*h.unwrap()).freelist = (*new).next;
+                    return Some(new as *mut u8)
+                }
+                else {
+                    if (*h.unwrap()).next_slab.is_none()
+                    {
+                        break 'outer;
+                    }
+                    h = (*h.unwrap()).next_slab;
+                }
+            }
+            
+        }
+        // make new slab for cache since theres no more space
+        let mut new = slab_header::init(self.size);
+        unsafe {(*h.unwrap()).next_slab = Some(new);
+            let mut o = (*new).freelist.unwrap();
+            (*new).freelist = (*o).next;
+            return Some(o as *mut u8);
+        }
+        
+
+    }
+    
 }
