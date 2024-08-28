@@ -50,7 +50,7 @@ impl PhysicalAllocator
                 EntryType::USABLE => {
                     
                     let page_amount = align_up(i.length as usize, 4096) / 4096;
-                    for e in 0..=page_amount
+                    for e in 0..page_amount
                     {
                         unsafe {
                             let node: *mut KTNode = ((i.base + (e as u64 * 4096)) + HDDM_OFFSET.get_response().unwrap().offset()) as *mut KTNode;

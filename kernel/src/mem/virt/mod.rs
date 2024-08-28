@@ -50,7 +50,9 @@ impl PageMap
                 {
                     let mut new_table = PMM.alloc().unwrap() as *mut u64;
                     new_table = (new_table as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
-                    new_table.write_bytes(0, 4096); // memset it
+                    new_table.write_bytes(0, 4096 / 8); // memset it
+                    // read docs for more information on why its 4096 /8 and not 4096
+                    // https://doc.rust-lang.org/std/ptr/fn.write_bytes.html
                     new_table = (new_table as u64 - HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
                     let mut entry = 0;
                     entry = new_table as u64;
@@ -174,6 +176,7 @@ impl PageMap
             head: None,
             rootpagetable: unsafe {PMM.alloc().unwrap()} as *mut u64,
         };
+        unsafe {q.rootpagetable.write_bytes(0, 4096 / 8)};
         let size_pages = unsafe {&THE_REAL as *const _ as usize} / 4096;
         println!("Size of kernel in pages: {}", size_pages);
         println!("Kernel Location: phys: {:#x} virt: {:#x}", ADDR.get_response().unwrap().physical_base(), ADDR.get_response().unwrap().virtual_base());
@@ -191,8 +194,29 @@ impl PageMap
         let entries = MEMMAP.get_response().unwrap().entries();
         let mut hhdm_pages = 0;
         
-        println!("over here");
-        
-        println!("all done");
+        for i in entries.iter()
+        {
+            match i.entry_type
+            {
+                EntryType::ACPI_NVS | EntryType::ACPI_RECLAIMABLE
+                | EntryType::USABLE | EntryType::BOOTLOADER_RECLAIMABLE
+                | EntryType::FRAMEBUFFER | EntryType::KERNEL_AND_MODULES =>
+                {
+                    let page_amount = super::phys::align_up(i.length as usize, 4096) / 4096;
+                    for e in 0..page_amount
+                    {
+                        q.map(
+                            HDDM_OFFSET.get_response().unwrap().offset() + (e * 4096) as u64,
+                            i.base + (e * 4096) as u64,
+                            VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()
+                        ).unwrap()
+                    }
+                }
+                _ => {
+
+                }
+            }
+        }
+        q.switch_to();
     }
 }
