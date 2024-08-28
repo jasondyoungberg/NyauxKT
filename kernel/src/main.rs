@@ -38,22 +38,7 @@ unsafe extern "C" fn kmain() -> ! {
             println!("GDT [{}]", "Okay".bright_green());
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
-            let x = PMM.alloc();
-            match x {
-                Ok(mut e) => {
-                    e = (e as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u8;
-                    *e = 3;
-                    println!("e is {}", 3);
-                    
-                    PMM.dealloc(e);
-                    
-                    println!("Complete!");
-                },
-                Err(e) =>
-                {
-
-                }
-            }
+            let mut vec = Vec
             
         }
     }

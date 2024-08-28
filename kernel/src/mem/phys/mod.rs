@@ -31,7 +31,7 @@ struct cache
     slabs: Option<*mut slab_header>,
     size: usize
 }
-struct kmalloc_manager
+pub struct kmalloc_manager
 {
     array: [cache; 8]
 }
@@ -52,7 +52,7 @@ impl kmalloc_manager
             cache4, cache5, cache6, cache7]
         }
     }
-    fn free(&mut self, addr: u64)
+    pub fn free(&mut self, addr: u64)
     {
         if addr == 0
         {
@@ -94,6 +94,17 @@ impl kmalloc_manager
             (*prev.unwrap()).next_slab = Some(h);
             return;
         }
+    }
+    pub fn alloc(&mut self, size: usize) -> Option<*mut u8>
+    {
+        let a = size.next_power_of_two();
+        for i in self.array.iter_mut()
+        {
+            if i.size >= a {
+                return i.slab_allocsearch();
+            }
+        }
+        None
     }
 }
 #[used]

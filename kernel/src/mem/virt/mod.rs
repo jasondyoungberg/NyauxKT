@@ -192,7 +192,7 @@ impl PageMap
             println!("HHDM Region: {:#?}", (*h.unwrap()));
         }
     }
-    fn vmm_region_dealloc(&mut self, addr: u64)
+    pub fn vmm_region_dealloc(&mut self, addr: u64)
     {
         let mut cur_node = self.head;
         let mut prev_node: Option<*mut VMMRegion> = None;
@@ -225,7 +225,7 @@ impl PageMap
             
         }
     }
-    fn vmm_region_alloc(&mut self, size: u64, flags: u64) -> Option<*mut u8>
+    pub fn vmm_region_alloc(&mut self, size: u64, flags: u64) -> Option<*mut u8>
     {
         let mut cur_node = self.head;
         let mut prev_node = None;
@@ -326,16 +326,6 @@ impl PageMap
         }
         q.switch_to();
         q.region_setup(hhdm_pages);
-        let mut test = q.vmm_region_alloc(20204, VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()).unwrap();
-        unsafe {
-            *test = 5;
-            if *test == 5
-            {
-                println!("IT WORKED!!");
-                println!("deallocating");
-                q.vmm_region_dealloc(test as u64);
-                println!("WORKED");
-            }
-        }
+        
     }
 }
