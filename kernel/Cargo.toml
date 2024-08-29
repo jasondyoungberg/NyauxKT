@@ -5,6 +5,7 @@ edition = "2021"
 
 [build-dependencies]
 cc = "*"
+nasm-rs = "*"
 [dependencies]
 flanterm_bindings = "1.0.5"
 lazy_static = {version = "1.5.0", features = ["spin_no_std"]}

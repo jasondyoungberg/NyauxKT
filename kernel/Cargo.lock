@@ -11,6 +11,7 @@ dependencies = [
  "flanterm_bindings",
  "lazy_static",
  "limine",
+ "nasm-rs",
  "owo-colors",
  "spin",
  "volatile",
@@ -218,6 +219,12 @@ name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
+
+[[package]]
+name = "nasm-rs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12fcfa1bd49e0342ec1d07ed2be83b59963e7acbeb9310e1bb2c07b69dadd959"
 
 [[package]]
 name = "nom"

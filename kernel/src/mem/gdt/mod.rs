@@ -1,5 +1,5 @@
 use core::{arch::global_asm, ffi::c_void, ptr::addr_of};
-
+global_asm!(include_str!("flush.s"));
 #[repr(C, packed(2))]
 
 struct GDTR
@@ -27,7 +27,6 @@ struct GDTDescriptor
 // this is useless lol
 static mut gdt: [u64; 9] = [0,0,0,0,0,0,0,0,0];
 static mut gdtptr: GDTR = GDTR{size: 0, offset: 0};
-global_asm!(include_str!("flush.s"));
 extern "C"
 {
     fn gdt_flush(a: *const c_void);

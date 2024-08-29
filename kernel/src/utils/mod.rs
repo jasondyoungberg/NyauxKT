@@ -37,6 +37,14 @@ impl NyauxTerm {
         }
         
     }
+    pub fn clear_screen(&mut self, col: u32)
+    {
+        unsafe {
+            // cursed
+            ((*self.ctx.unwrap()).set_text_bg_rgb.unwrap())(self.ctx.unwrap(), col as u32);
+            ((*self.ctx.unwrap()).clear.unwrap())(self.ctx.unwrap(), true);
+        }
+    }
 }
 impl fmt::Write for NyauxTerm
 {

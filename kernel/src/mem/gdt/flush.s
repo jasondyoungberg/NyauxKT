@@ -4,10 +4,10 @@ gdt_flush:
     lgdt [rdi]
 
     push 0x28
-    lea rax, [rip + .reload_CS]
+    lea rax, [rip + reload_CS]
     push rax
     retfq
-.reload_CS:
+reload_CS:
     mov ax, 0x30
     mov ds, ax
     mov es, ax

@@ -38,7 +38,6 @@ unsafe extern "C" fn kmain() -> ! {
             println!("GDT [{}]", "Okay".bright_green());
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
-            let mut vec = Vec
             
         }
     }
@@ -48,6 +47,8 @@ unsafe extern "C" fn kmain() -> ! {
 
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
+    
+    TERM.lock().clear_screen(0xFF0000);
     println!("KT Kernel Panic!: {}", _info);
     hcf();
 }
