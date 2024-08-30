@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
+#![feature(naked_functions)]
+
 
 use core::{arch::asm};
 
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
 use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
-use NyauxKT::{mem::phys::{HDDM_OFFSET, PMM}, println, utils::{self, KTError}, TERM};
+use NyauxKT::{idt::InterruptManager, mem::phys::{HDDM_OFFSET, PMM}, println, utils::{self, KTError}, TERM};
 use core::fmt::Write;
 use owo_colors::OwoColorize;
 /// Sets the base revision to the latest revision supported by the crate.
@@ -38,6 +40,7 @@ unsafe extern "C" fn kmain() -> ! {
             println!("GDT [{}]", "Okay".bright_green());
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
+            InterruptManager::start_idt();
             
         }
     }
