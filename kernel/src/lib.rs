@@ -1,6 +1,7 @@
 #![no_std]
 #![feature(const_nonnull_new)]
 #![feature(const_option)]
+#![feature(naked_functions)]
 use lazy_static::lazy_static;
 use spin::Mutex;
 use utils::NyauxTerm;

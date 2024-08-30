@@ -5,6 +5,7 @@ use crate::println;
 
 
 #[repr(C)]
+#[derive(Clone, Copy)]
 struct GateDescriptor {
     offset: u16,
     seg: u16,
@@ -14,7 +15,22 @@ struct GateDescriptor {
     offset_hi: u32,
     reversed: u32,
 }
-
+impl GateDescriptor
+{
+    const fn new() -> Self {
+        return Self 
+        {
+            offset: 0,
+            seg: 0,
+            ist_and_reversed: 0,
+            flags: 0,
+            offset_mid: 0,
+            offset_hi: 0,
+            reversed: 0
+        }
+    }
+}
+static mut IDT: [GateDescriptor; 256] = [GateDescriptor::new(); 256];
 #[repr(C)]
 struct IDTR {
     size: u16,
@@ -57,6 +73,22 @@ extern "C" fn exception_handler(registers: u64)
         panic!("crash");
     }
 }
+pub fn idt_set_gate(num: u8, function_ptr: usize) {
+    let base = function_ptr;
+    unsafe {
+        IDT[num as usize] = GateDescriptor {
+            offset: (base & 0xFFFF) as u16,
+            offset_mid: ((base >> 16) & 0xFFFF) as u16,
+            offset_hi: ((base >> 32) & 0xFFFFFFFF) as u32,
+            seg: 0x28,
+            ist_and_reversed: 0,
+            reversed: 0,
+            flags: 0xEE,
+        };
+    }
+
+    
+}
 
 macro_rules! exception_function {
     ($code:expr, $handler:ident) => {
@@ -84,7 +116,7 @@ macro_rules! exception_function {
                     "push {0}",
                     "mov rdi, rsp",
                     "call {1}",
-                    "pop {0}",
+                    "add rsp, 8",
                     "mov rsp, rdi",
                     "pop r15",
                     "pop r14",
@@ -142,6 +174,20 @@ impl InterruptManager
 {
     pub fn start_idt()
     {
-       
+        idt_set_gate(0x00, div_error as usize);
+        idt_set_gate(0x06, invalid_opcode as usize);
+        idt_set_gate(0x08, double_fault as usize);
+        idt_set_gate(0x0D, general_protection_fault as usize);
+        idt_set_gate(0x0E, page_fault as usize);
+        unsafe {IDTR.offset = core::ptr::addr_of!(IDT) as u64};
+        unsafe {IDTR.size = (core::mem::size_of::<GateDescriptor>() * 256) as u16};
+        unsafe {
+            core::arch::asm!(
+                "lidt [{}]",
+                in(reg) core::ptr::addr_of!(IDTR)
+            );
+        }
+        
+
     }
 }

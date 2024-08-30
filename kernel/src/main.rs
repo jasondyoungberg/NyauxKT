@@ -41,7 +41,6 @@ unsafe extern "C" fn kmain() -> ! {
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
-            
         }
     }
 
