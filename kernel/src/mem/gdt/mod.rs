@@ -1,6 +1,6 @@
 use core::{arch::global_asm, ffi::c_void, ptr::addr_of};
 global_asm!(include_str!("flush.s"));
-#[repr(C, packed(2))]
+#[repr(C, packed)]
 
 struct GDTR
 {
@@ -11,10 +11,10 @@ impl GDTR
 {
     fn new(table: u64, size: u16) -> GDTR
     {
-        GDTR { size: size, offset: table }
+        GDTR { size: size - 1, offset: table }
     }
 }
-#[repr(C, packed(2))]
+#[repr(C, packed)]
 struct GDTDescriptor
 {
     limit_low: u16,

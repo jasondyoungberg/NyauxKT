@@ -8,6 +8,7 @@ use utils::NyauxTerm;
 pub mod utils;
 pub mod mem;
 pub mod idt;
+pub mod cpu;
 
 lazy_static!{
     pub static ref TERM: Mutex<NyauxTerm> = NyauxTerm::new_none();

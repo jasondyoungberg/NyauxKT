@@ -31,7 +31,8 @@ impl GateDescriptor
     }
 }
 static mut IDT: [GateDescriptor; 256] = [GateDescriptor::new(); 256];
-#[repr(C)]
+#[repr(C, packed)]
+#[derive(Debug)]
 struct IDTR {
     size: u16,
     offset: u64,
@@ -70,7 +71,7 @@ extern "C" fn exception_handler(registers: u64)
 {
     let got_registers = registers as *mut Registers;
     unsafe {
-        panic!("crash");
+        panic!("crash with register rip at {:#x}", (*got_registers).rip);
     }
 }
 pub fn idt_set_gate(num: u8, function_ptr: usize) {
@@ -152,15 +153,7 @@ exception_function!(0x08, double_fault);
 exception_function!(0x0D, general_protection_fault);
 exception_function!(0x0E, page_fault);
 exception_function!(0xFF, generic_handler);
-impl IDTR {
-    fn from_ptr(ptr: *mut GateDescriptor) -> IDTR {
-        IDTR {
-            //crazy
-            size: unsafe { core::mem::size_of_val(&*ptr) as u16 },
-            offset: ptr as u64,
-        }
-    }
-}
+
 static mut IDTR: IDTR = IDTR { offset: 0, size: 0 };
 extern "C" {
     fn init_idt(a: *const c_void);
@@ -179,8 +172,11 @@ impl InterruptManager
         idt_set_gate(0x08, double_fault as usize);
         idt_set_gate(0x0D, general_protection_fault as usize);
         idt_set_gate(0x0E, page_fault as usize);
-        unsafe {IDTR.offset = core::ptr::addr_of!(IDT) as u64};
-        unsafe {IDTR.size = (core::mem::size_of::<GateDescriptor>() * 256) as u16};
+        unsafe {IDTR.offset = IDT.as_ptr() as u64};
+        
+        unsafe {IDTR.size = ((core::mem::size_of::<GateDescriptor>() * 256) - 1)  as u16};
+        
+        
         unsafe {
             core::arch::asm!(
                 "lidt [{}]",

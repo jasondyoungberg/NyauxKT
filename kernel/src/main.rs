@@ -8,7 +8,7 @@ use core::{arch::asm};
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
 use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
-use NyauxKT::{idt::InterruptManager, mem::phys::{HDDM_OFFSET, PMM}, println, utils::{self, KTError}, TERM};
+use NyauxKT::{cpu::{self, lapic::{self, LAPIC}}, idt::InterruptManager, mem::phys::{HDDM_OFFSET, PMM}, println, utils::{self, KTError}, TERM};
 use core::fmt::Write;
 use owo_colors::OwoColorize;
 /// Sets the base revision to the latest revision supported by the crate.
@@ -41,6 +41,8 @@ unsafe extern "C" fn kmain() -> ! {
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
+            let mut cpu = cpu::CPU {cpu_id: 0,lapic_addr: 0};
+            cpu.init_lapic();
         }
     }
 
