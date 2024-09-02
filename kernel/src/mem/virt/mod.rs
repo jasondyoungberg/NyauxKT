@@ -324,6 +324,7 @@ impl PageMap
                 }
             }
         }
+        
         q.switch_to();
         q.region_setup(hhdm_pages);
         

@@ -7,7 +7,7 @@ pub mod phys;
 pub mod gdt;
 pub mod virt;
 
-struct MemoryManager;
+pub struct MemoryManager;
 
 unsafe impl GlobalAlloc for MemoryManager
 {

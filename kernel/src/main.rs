@@ -42,6 +42,7 @@ unsafe extern "C" fn kmain() -> ! {
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
             let mut cpu = cpu::CPU {cpu_id: 0,lapic_addr: 0};
+            NyauxKT::acpi::ACPI::init();
             cpu.init_lapic();
         }
     }
