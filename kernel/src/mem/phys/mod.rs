@@ -8,6 +8,7 @@ use crate::print;
 use crate::println;
 use crate::utils::KTError;
 
+#[derive(Debug)]
 pub struct KTNode
 {
     next: Option<*mut KTNode>
@@ -75,6 +76,8 @@ impl kmalloc_manager
             return;
         }
         let mut new = addr as *mut KTNode;
+        
+        unsafe {new.write_bytes(0, 1)};
         unsafe {
             (*new).next = (*h).freelist;
             (*h).freelist = Some(new);
@@ -216,19 +219,63 @@ impl slab_header
         area = (area as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
         unsafe {area.write_bytes(0, 4096 / 8)};
         let mut header = (area) as *mut slab_header;
+        
         unsafe {
+            header.write_bytes(0, 1);
             (*header).size = size;
-            header;
+            
             let obj_amount = (4096 - size_of::<slab_header>()) / size;
             let mut start = (header as u64 + size_of::<slab_header>() as u64) as *mut KTNode;
+            println!("objection ammount: {obj_amount}");
+            
             (*header).freelist = Some(start);
+            start.write_bytes(0, 1);
+            (*start).next = None;
             let mut prev = start;
+            
+            println!("prev addr is {:#x}", prev as u64);
+            
             for i in 1..obj_amount
             {
                 let mut new = (start as u64 + (i as u64 * size as u64)) as *mut KTNode;
+                new.write(KTNode { next: None });
+                (*new).next = None;
+                
                 (*prev).next = Some(new);
+                println!("info about this new node new: {:?} prev: {:?}", (*new), (*prev));
+                
+                let mut e = 0;
+                for c in 0..800000
+                {
+                    e += 1;
+                }
+                
                 prev = new;
             }
+            
+            (*prev).next = None;
+            
+            println!("---Freelist---");
+            let mut w = start;
+            for i in 1..obj_amount
+            {
+                
+                println!("node: {:?}", *w);
+                
+               
+                let mut e = 0;
+                for c in 0..800000
+                {
+                    e += 1;
+                }
+
+                match (*w).next
+                {
+                    Some(t) => w = t,
+                    None => break,
+                }
+            }
+            panic!("w");
         }
         return header;
     }
@@ -248,9 +295,10 @@ impl cache
        'outer: while h.is_none() == false
         {
             unsafe {
-                if (*h.unwrap()).freelist != None
+                if (*h.unwrap()).freelist.is_some()
                 {
                     let mut new = (*h.unwrap()).freelist.unwrap();
+                    println!("new struct: {:?}", new);
                     (*h.unwrap()).freelist = (*new).next;
                     return Some(new as *mut u8)
                 }

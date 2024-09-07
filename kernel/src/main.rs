@@ -42,7 +42,7 @@ unsafe extern "C" fn kmain() -> ! {
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
             let mut cpu = cpu::CPU {cpu_id: 0,lapic_addr: 0};
-            NyauxKT::acpi::ACPI::init();
+            
             cpu.init_lapic();
         }
     }
@@ -53,7 +53,7 @@ unsafe extern "C" fn kmain() -> ! {
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
     
-    TERM.lock().clear_screen(0xFF0000);
+    //TERM.lock().clear_screen(0xFF0000);
     println!("KT Kernel Panic!: {}", _info);
     hcf();
 }

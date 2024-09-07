@@ -2,7 +2,7 @@ use bitflags::{bitflags, Flags};
 use limine::{memory_map::EntryType, request::KernelAddressRequest};
 use owo_colors::OwoColorize;
 
-use crate::{mem::phys::MEMMAP, println};
+use crate::{mem::phys::{align_down, MEMMAP}, println};
 
 use super::phys::{align_up, HDDM_OFFSET, PMM};
 
@@ -38,6 +38,7 @@ extern "C"
 {
     static THE_REAL: u8;
 }
+extern crate alloc;
 impl PageMap
 {
     fn get_next_table(table: *mut u64, index: u64, allocate: bool, flags: Option<u64>) -> *mut u64
@@ -275,6 +276,55 @@ impl PageMap
         panic!("nooo");
         None
     }
+    pub fn vmm_region_alloc_non_backing(&mut self, phys_addr: u64, size: u64, flags: u64) -> Option<*mut u8>
+    {
+        let mut cur_node = self.head;
+        let mut prev_node = None;
+        while (cur_node.is_none() == false)
+        {
+            if prev_node.is_none()
+            {
+                prev_node = cur_node;
+                unsafe {
+                    cur_node = (*cur_node.unwrap()).next;
+                }
+                
+                continue;
+            }
+            unsafe {
+                if ((*cur_node.unwrap()).base - ((*prev_node.unwrap()).base + (*prev_node.unwrap()).length)) >= align_up(size as usize, 4096) as u64 + 0x1000
+                {
+                    let mut new_guy = (PMM.alloc().unwrap() as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut VMMRegion;
+                    (*new_guy).base = (*prev_node.unwrap()).base + (*prev_node.unwrap()).length;
+                    (*new_guy).length = align_down(size as usize, 4096) as u64;
+                    (*prev_node.unwrap()).next = Some(new_guy);
+                    (*new_guy).next = cur_node;
+                    let amou = align_up(size as usize, 4096) / 4096;
+                    for i in 0..amou
+                    {
+                        let e = phys_addr;
+                        
+                        self.map(
+                            (*new_guy).base + (i * 0x1000) as u64,
+                            e as u64,
+                            flags
+                        ).unwrap();
+                    }
+                    return Some((*new_guy).base as *mut u8);
+                }
+                else {
+                    prev_node = cur_node;
+                    
+                    cur_node = (*cur_node.unwrap()).next;
+                    
+                }
+            }
+            
+        }
+        panic!("nooo");
+        None
+    }
+
     pub fn new_inital()
     {
         let mut q = PageMap {
@@ -327,6 +377,25 @@ impl PageMap
         
         q.switch_to();
         q.region_setup(hhdm_pages);
+        // unsafe {cur_pagemap = Some(q)};
+        println!("performing {}", "tests".on_bright_yellow());
+        let mut e = alloc::boxed::Box::new(5);
+        e = alloc::boxed::Box::new(1);
+        println!("{e}");
+        let mut e = q.vmm_region_alloc(100000, VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits());
+        
+        
+        unsafe {
+            e.unwrap().write_bytes(0xAA, 100000);
+        }
+        for i in 0..5
+        {
+            unsafe {
+                let r = e.unwrap() as *const u64;
+                println!("r is {:#x}", *r);
+            }
+        }
+        panic!("done")
         
     }
 }
