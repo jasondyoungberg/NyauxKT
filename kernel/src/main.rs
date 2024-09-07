@@ -41,7 +41,7 @@ unsafe extern "C" fn kmain() -> ! {
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
-            let mut cpu = cpu::CPU {cpu_id: 0,lapic_addr: 0};
+            let mut cpu = cpu::CPU {cpu_id: 0,lapic_addr: 0, hpet_addr_virt: 0, time_per_tick_hpet: 0};
             let mut x = ACPIMANAGER::new();
             
             cpu.init_lapic(&mut x);

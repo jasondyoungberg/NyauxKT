@@ -78,7 +78,7 @@ impl PageMap
         }
         
     }
-    fn map(&mut self, from_virt: u64, to_phys: u64, flags: u64) -> Result<(), &'static str>
+    pub fn map(&mut self, from_virt: u64, to_phys: u64, flags: u64) -> Result<(), &'static str>
     {
         let lvl4table_index = (from_virt >> 39) & 0x1FF;
         let lvl3table_index = (from_virt >> 30) & 0x1FF;
@@ -102,7 +102,7 @@ impl PageMap
     {
         return pte & 0x0007FFFFFFFFF000
     }
-    fn unmap(&mut self, from_virt: u64, flags: u64) -> Result<(), &'static str>
+    pub fn unmap(&mut self, from_virt: u64, flags: u64) -> Result<(), &'static str>
     {
         let lvl4table_index = (from_virt >> 39) & 0x1FF;
         let lvl3table_index = (from_virt >> 30) & 0x1FF;
@@ -134,7 +134,7 @@ impl PageMap
 
         Ok(())
     }
-    fn virt_to_phys(&mut self, from_virt: u64) -> Result<u64, &'static str>
+    pub fn virt_to_phys(&mut self, from_virt: u64) -> Result<u64, &'static str>
     {
         let lvl4table_index = (from_virt >> 39) & 0x1FF;
         let lvl3table_index = (from_virt >> 30) & 0x1FF;
@@ -166,7 +166,7 @@ impl PageMap
            
         }
     }
-    fn switch_to(&self)
+    pub fn switch_to(&self)
     {
         unsafe {core::arch::asm!(
             "mov cr3, {}",
