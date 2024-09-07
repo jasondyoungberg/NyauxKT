@@ -2,7 +2,10 @@
 name = "NyauxKT"
 version = "0.1.0"
 edition = "2021"
-
+[profile.release]
+panic = 'abort'
+[profile.dev]
+panic = 'abort'
 [build-dependencies]
 cc = "*"
 nasm-rs = "*"
