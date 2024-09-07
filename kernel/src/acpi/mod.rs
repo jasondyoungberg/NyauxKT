@@ -1,5 +1,5 @@
 use core::{alloc::{GlobalAlloc, Layout}, ptr::NonNull, u8};
-use ::acpi::{AcpiHandler, AcpiTables, PhysicalMapping};
+use ::acpi::{hpet::HpetTable, AcpiHandler, AcpiTable, AcpiTables, PhysicalMapping};
 use limine::request::RsdpRequest;
 
 extern crate alloc;
@@ -10,7 +10,7 @@ use crate::{mem::{phys::{PhysicalAllocator, HDDM_OFFSET}, virt::{cur_pagemap, VM
 #[link_section = ".requests"]
 static RSDP: RsdpRequest = RsdpRequest::new();
 #[derive(Clone, Debug)]
-struct acpi;
+pub struct acpi;
 
 impl AcpiHandler for acpi
 {
@@ -22,7 +22,7 @@ impl AcpiHandler for acpi
         
     }
 }
-pub struct ACPIMANAGER(AcpiTables<acpi>);
+pub struct ACPIMANAGER(pub AcpiTables<acpi>);
 
 impl ACPIMANAGER
 {
@@ -30,4 +30,5 @@ impl ACPIMANAGER
     {
         ACPIMANAGER(unsafe {AcpiTables::from_rsdp(acpi, (RSDP.get_response().unwrap().address() as u64 - HDDM_OFFSET.get_response().unwrap().offset()) as usize).unwrap()})
     }
+    
 }

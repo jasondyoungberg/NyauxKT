@@ -116,7 +116,7 @@ pub static HDDM_OFFSET: HhdmRequest = HhdmRequest::new();
 
 #[used]
 #[link_section = ".requests"]
-pub static MEMMAP: MemoryMapRequest = MemoryMapRequest::new();
+pub static mut MEMMAP: MemoryMapRequest = MemoryMapRequest::new();
 /// stolen troll
 pub fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
@@ -132,7 +132,7 @@ impl PhysicalAllocator
     pub fn new() -> Result<(), &'static str>
     {
         println!("{}", "--Memory MAP--".red());
-        let entries = MEMMAP.get_response().unwrap().entries();
+        let entries = unsafe {MEMMAP.get_response().unwrap().entries()};
         
         let mut new = PhysicalAllocator {head : None};
         let mut last = None;

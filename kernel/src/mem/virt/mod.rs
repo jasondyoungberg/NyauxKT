@@ -347,18 +347,23 @@ impl PageMap
             
         }
         println!("{}", "kernel mapped. mapping HHDM...".on_bright_magenta());
-        let entries = MEMMAP.get_response().unwrap().entries();
+        let entries = unsafe {MEMMAP.get_response_mut().unwrap().entries_mut()};
         let mut hhdm_pages = 0;
         
-        for i in entries.iter()
+        for i in entries.iter_mut()
         {
             match i.entry_type
             {
                 EntryType::ACPI_NVS | EntryType::ACPI_RECLAIMABLE
                 | EntryType::USABLE | EntryType::BOOTLOADER_RECLAIMABLE
-                | EntryType::FRAMEBUFFER | EntryType::KERNEL_AND_MODULES =>
+                | EntryType::FRAMEBUFFER | EntryType::KERNEL_AND_MODULES | EntryType::RESERVED =>
                 {
+                    if i.entry_type == EntryType::RESERVED
+                    {
+                        i.base = (super::phys::align_down(i.base as usize, 4096) + i.base as usize % 4096) as u64;
+                    }
                     let page_amount = super::phys::align_up(i.length as usize, 4096) / 4096;
+                    
                     for e in 0..page_amount
                     {
                         q.map(
