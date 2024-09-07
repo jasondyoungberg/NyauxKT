@@ -2,10 +2,7 @@
 name = "NyauxKT"
 version = "0.1.0"
 edition = "2021"
-[profile.release]
-panic = 'abort'
-[profile.dev]
-panic = 'abort'
+
 [build-dependencies]
 cc = "*"
 nasm-rs = "*"
@@ -17,3 +14,4 @@ spin = "0.9.8"
 volatile = "0.6.1"
 owo-colors = "4.0.0"
 bitflags = "2.6.0"
+acpi = "*"

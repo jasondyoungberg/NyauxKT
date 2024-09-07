@@ -34,13 +34,13 @@ struct cache
 }
 pub struct kmalloc_manager
 {
-    array: [cache; 8]
+    array: [cache; 7]
 }
 impl kmalloc_manager
 {
     fn init() -> Self
     {
-        let mut cache0 = cache::init(8);
+        
         let mut cache1 = cache::init(16);
         let mut cache2 = cache::init(32);
         let mut cache3 = cache::init(64);
@@ -49,7 +49,7 @@ impl kmalloc_manager
         let mut cache6 = cache::init(512);
         let mut cache7 = cache::init(1024);
         Self {
-            array: [cache0, cache1, cache2, cache3,
+            array: [cache1, cache2, cache3,
             cache4, cache5, cache6, cache7]
         }
     }
@@ -242,40 +242,17 @@ impl slab_header
                 (*new).next = None;
                 
                 (*prev).next = Some(new);
-                println!("info about this new node new: {:?} prev: {:?}", (*new), (*prev));
                 
-                let mut e = 0;
-                for c in 0..800000
-                {
-                    e += 1;
-                }
+                
+                
                 
                 prev = new;
             }
             
             (*prev).next = None;
             
-            println!("---Freelist---");
-            let mut w = start;
-            for i in 1..obj_amount
-            {
-                
-                println!("node: {:?}", *w);
-                
-               
-                let mut e = 0;
-                for c in 0..800000
-                {
-                    e += 1;
-                }
-
-                match (*w).next
-                {
-                    Some(t) => w = t,
-                    None => break,
-                }
-            }
-            panic!("w");
+            
+            
         }
         return header;
     }

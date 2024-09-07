@@ -377,25 +377,8 @@ impl PageMap
         
         q.switch_to();
         q.region_setup(hhdm_pages);
-        // unsafe {cur_pagemap = Some(q)};
-        println!("performing {}", "tests".on_bright_yellow());
-        let mut e = alloc::boxed::Box::new(5);
-        e = alloc::boxed::Box::new(1);
-        println!("{e}");
-        let mut e = q.vmm_region_alloc(100000, VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits());
+        unsafe {cur_pagemap = Some(q)};
         
-        
-        unsafe {
-            e.unwrap().write_bytes(0xAA, 100000);
-        }
-        for i in 0..5
-        {
-            unsafe {
-                let r = e.unwrap() as *const u64;
-                println!("r is {:#x}", *r);
-            }
-        }
-        panic!("done")
         
     }
 }
