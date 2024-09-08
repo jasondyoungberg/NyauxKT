@@ -255,7 +255,7 @@ exception_function_no_error!(0x06, invalid_opcode, exception_handler);
 exception_function!(0x08, double_fault);
 exception_function!(0x0D, general_protection_fault);
 exception_function!(0x0E, page_fault);
-exception_function_no_error!(0x34, schede, scheduler);
+exception_function_no_error!(34, schede, scheduler);
 
 
 static mut IDTR: IDTR = IDTR { offset: 0, size: 0 };
