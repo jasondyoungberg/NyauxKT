@@ -349,7 +349,15 @@ impl PageMap
         println!("{}", "kernel mapped. mapping HHDM...".on_bright_magenta());
         let entries = unsafe {MEMMAP.get_response_mut().unwrap().entries_mut()};
         let mut hhdm_pages = 0;
-        
+        for i in (0..0x100000000 as u64).step_by(4096)
+        {
+            q.map(
+                HDDM_OFFSET.get_response().unwrap().offset() + i as u64,
+                i as u64,
+                VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits()
+            ).unwrap();
+            hhdm_pages += 1;
+        }
         for i in entries.iter_mut()
         {
             match i.entry_type

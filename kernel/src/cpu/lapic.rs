@@ -46,7 +46,7 @@ impl LAPIC for CPU
         
         self.lapic_addr = (addr & 0xfffff000) + HDDM_OFFSET.get_response().unwrap().offset();
         // map lapic
-        unsafe {cur_pagemap.as_mut().unwrap().map(self.lapic_addr, addr & 0xffff000, VMMFlags::KTWRITEALLOWED.bits() | VMMFlags::KTPRESENT.bits()).unwrap()};
+        
         println!("addr of lapic for cpu: {:#x}", self.lapic_addr);
         let table = e.0.find_table::<HpetTable>().unwrap_or_else(|_| panic!("fuck"));
         unsafe {
@@ -61,7 +61,7 @@ impl LAPIC for CPU
             let q =  HpetInfo::new(&e.0).unwrap();
             println!("base addr: {:#x}",q.base_address);
             // map hpet mmio LOL
-            cur_pagemap.as_mut().unwrap().map(q.base_address as u64 + HDDM_OFFSET.get_response().unwrap().offset() as u64, q.base_address as u64, VMMFlags::KTWRITEALLOWED.bits() | VMMFlags::KTPRESENT.bits()).unwrap();
+            // cur_pagemap.as_mut().unwrap().map(q.base_address as u64 + HDDM_OFFSET.get_response().unwrap().offset() as u64, q.base_address as u64, VMMFlags::KTWRITEALLOWED.bits() | VMMFlags::KTPRESENT.bits()).unwrap();
             let mut it = *((q.base_address as u64 + HDDM_OFFSET.get_response().unwrap().offset() as u64) as *mut u64);
             
             if it & (1 << 13) != 0
