@@ -1,7 +1,7 @@
 
 use core::{arch::global_asm, ffi::c_void};
 
-use crate::println;
+use crate::{cpu::{self, lapic::{self, LAPIC}, CPU}, println, utils::rdmsr};
 
 
 #[repr(C)]
@@ -104,6 +104,16 @@ extern "C" fn exception_handler(registers: u64)
     panic!("crash with register rip at {:#x}\nerror code {:#x} idiot", got_registers.rip, got_registers.error_code);
    
 }
+#[no_mangle]
+pub extern "C" fn scheduler(registers: u64)
+{
+    let got_registers = unsafe {*(registers as *mut Registers_Exception)};
+    println!("tick");
+    let mut addr = rdmsr(0x1b);
+    addr = addr & 0xfffff000;
+    CPU::send_lapic_eoi(addr);
+
+}
 pub fn idt_set_gate(num: u8, function_ptr: usize) {
     let base = function_ptr;
     unsafe {
@@ -125,6 +135,7 @@ macro_rules! exception_function {
     ($code:expr, $handler:ident) => {
         
         #[naked]
+        #[no_mangle]
         extern "C" fn $handler() {
 
             unsafe {
@@ -178,9 +189,10 @@ macro_rules! exception_function {
     };
 }
 macro_rules! exception_function_no_error {
-    ($code:expr, $handler:ident) => {
+    ($code:expr, $handler:ident, $meow:ident) => {
         
         #[naked]
+        #[no_mangle]
         extern "C" fn $handler() {
 
             unsafe {
@@ -223,7 +235,7 @@ macro_rules! exception_function_no_error {
                     "pop rax",
                     "iretq",
                     const $code,
-                    sym exception_handler,
+                    sym $meow,
                     options(noreturn)
                 );
             };
@@ -235,11 +247,12 @@ macro_rules! exception_function_no_error {
     };
 }
 
-exception_function_no_error!(0x00, div_error);
-exception_function_no_error!(0x06, invalid_opcode);
+exception_function_no_error!(0x00, div_error, exception_handler);
+exception_function_no_error!(0x06, invalid_opcode, exception_handler);
 exception_function!(0x08, double_fault);
 exception_function!(0x0D, general_protection_fault);
 exception_function!(0x0E, page_fault);
+exception_function_no_error!(0x34, schede, scheduler);
 
 
 static mut IDTR: IDTR = IDTR { offset: 0, size: 0 };

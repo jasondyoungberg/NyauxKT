@@ -7,8 +7,9 @@ use super::CPU;
 pub trait LAPIC
 {
     unsafe fn ksleep(&self, ms: u64);
-    fn write_lapic_register(&self, reg: u64, val: u64);
-    fn read_lapic_register(&self, reg: u64) -> u64;
+    fn write_lapic_register(&self, reg: u64, val: u32);
+    fn read_lapic_register(&self, reg: u64) -> u32;
+    fn send_lapic_eoi(lapic_addr: u64);
     fn init_lapic(&mut self, e: &mut ACPIMANAGER);
 }
 impl LAPIC for CPU
@@ -24,22 +25,26 @@ impl LAPIC for CPU
             
         }
     }
-    fn write_lapic_register(&self, reg: u64, val: u64)
+    fn write_lapic_register(&self, reg: u64, val: u32)
     {
-        
+        println!("writing");
         unsafe {
             
-            core::ptr::write_volatile((self.lapic_addr + reg) as *mut u64, val);
+            core::ptr::write_volatile((self.lapic_addr + reg) as *mut u32, val);
         }
     }
-    fn read_lapic_register(&self, reg: u64) -> u64
+    fn read_lapic_register(&self, reg: u64) -> u32
     {
-        
+        println!("reading");
         unsafe {
            
             
-           return core::ptr::read_volatile((self.lapic_addr + reg) as *mut u64);
+           return core::ptr::read_volatile((self.lapic_addr + reg) as *mut u32) as u32;
         }
+    }
+    fn send_lapic_eoi(lapic_addr: u64)
+    {
+        unsafe {core::ptr::write_volatile((lapic_addr + 0xb0) as *mut u32, 0)};
     }
     fn init_lapic(&mut self, e: &mut ACPIMANAGER) {
         let addr = rdmsr(0x1b);
@@ -97,7 +102,7 @@ impl LAPIC for CPU
                 // (1 << 17) sets to periodic
                 // read sdm for more info
                 self.write_lapic_register(0x320, 34 | (0 << 16) | (1 << 17));
-                
+                unsafe {core::arch::asm!("int 0x34")};
 
             }
             else {
