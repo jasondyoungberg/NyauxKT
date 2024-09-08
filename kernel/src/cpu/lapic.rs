@@ -102,7 +102,7 @@ impl LAPIC for CPU
                 // (1 << 17) sets to periodic
                 // read sdm for more info
                 self.write_lapic_register(0x320, 34 | (0 << 16) | (1 << 17));
-                unsafe {core::arch::asm!("int 0x34")};
+                
 
             }
             else {

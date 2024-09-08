@@ -13,7 +13,7 @@ define DEFAULT_VAR =
 endef
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-override DEFAULT_QEMUFLAGS := -m 2G -d int -serial stdio --no-reboot --no-shutdown -s -S
+override DEFAULT_QEMUFLAGS := -m 2G -d int -serial stdio --no-reboot --no-shutdown
 $(eval $(call DEFAULT_VAR,QEMUFLAGS,$(DEFAULT_QEMUFLAGS)))
 
 override IMAGE_NAME := template

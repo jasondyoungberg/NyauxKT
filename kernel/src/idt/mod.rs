@@ -1,7 +1,7 @@
 
 use core::{arch::global_asm, ffi::c_void};
 
-use crate::{cpu::{self, lapic::{self, LAPIC}, CPU}, println, utils::rdmsr};
+use crate::{cpu::{self, lapic::{self, LAPIC}, CPU}, mem::phys::HDDM_OFFSET, println, utils::rdmsr};
 
 
 #[repr(C)]
@@ -111,6 +111,7 @@ pub extern "C" fn scheduler(registers: u64)
     println!("tick");
     let mut addr = rdmsr(0x1b);
     addr = addr & 0xfffff000;
+    addr = addr + HDDM_OFFSET.get_response().unwrap().offset();
     CPU::send_lapic_eoi(addr);
 
 }
@@ -159,7 +160,7 @@ macro_rules! exception_function {
                     "mov rdi, rsp",
                     "call {1}",
                     "add rsp, 8",
-                    "mov rsp, rdi",
+                    
                     "pop r15",
                     "pop r14",
                     "pop r13",
@@ -175,6 +176,7 @@ macro_rules! exception_function {
                     "pop rcx",
                     "pop rbx",
                     "pop rax",
+                    "add rsp, 8",
                     "iretq",
                     const $code,
                     sym exception_handler,
@@ -217,7 +219,7 @@ macro_rules! exception_function_no_error {
                     "mov rdi, rsp",
                     "call {1}",
                     "add rsp, 8",
-                    "mov rsp, rdi",
+                    
                     "pop r15",
                     "pop r14",
                     "pop r13",
@@ -233,6 +235,7 @@ macro_rules! exception_function_no_error {
                     "pop rcx",
                     "pop rbx",
                     "pop rax",
+                    "add rsp, 8",
                     "iretq",
                     const $code,
                     sym $meow,
@@ -273,6 +276,7 @@ impl InterruptManager
         idt_set_gate(0x08, double_fault as usize);
         idt_set_gate(0x0D, general_protection_fault as usize);
         idt_set_gate(0x0E, page_fault as usize);
+        idt_set_gate(34, schede as usize);
         unsafe {IDTR.offset = IDT.as_ptr() as u64};
         
         unsafe {IDTR.size = ((core::mem::size_of::<GateDescriptor>() * 256) - 1)  as u16};
