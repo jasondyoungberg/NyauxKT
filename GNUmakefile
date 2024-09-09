@@ -13,7 +13,7 @@ define DEFAULT_VAR =
 endef
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-override DEFAULT_QEMUFLAGS := -m 2G -d int -serial stdio --no-reboot --no-shutdown
+override DEFAULT_QEMUFLAGS := -m 2G -d int -serial stdio --no-reboot --no-shutdown 
 $(eval $(call DEFAULT_VAR,QEMUFLAGS,$(DEFAULT_QEMUFLAGS)))
 
 override IMAGE_NAME := template
@@ -41,6 +41,16 @@ run-uefi: ovmf/ovmf-code-x86_64.fd ovmf/ovmf-vars-x86_64.fd $(IMAGE_NAME).iso
 		-cdrom $(IMAGE_NAME).iso \
 		-boot d \
 		$(QEMUFLAGS)
+.PHONY: run-debuguefi
+run-debuguefi: ovmf/ovmf-code-x86_64.fd ovmf/ovmf-vars-x86_64.fd $(IMAGE_NAME).iso
+	qemu-system-x86_64 \
+		-M q35 \
+		-drive if=pflash,unit=0,format=raw,file=ovmf/ovmf-code-x86_64.fd,readonly=on \
+		-drive if=pflash,unit=1,format=raw,file=ovmf/ovmf-vars-x86_64.fd \
+		-cdrom $(IMAGE_NAME).iso \
+		-boot d \
+		$(QEMUFLAGS) \
+		-s -S
 
 .PHONY: run-hdd
 run-hdd: $(IMAGE_NAME).hdd

@@ -33,13 +33,13 @@ impl uacpi::kernel_api::KernelApi for acpi
         alloc::alloc::alloc(layout)
     }
     fn create_event(&self) -> uacpi::Handle {
-        uacpi::Handle::new(0)
+        uacpi::Handle::new(1)
     }
     fn create_mutex(&self) -> uacpi::Handle {
-        uacpi::Handle::new(0)
+        uacpi::Handle::new(1)
     }
     fn create_spinlock(&self) -> uacpi::Handle {
-        uacpi::Handle::new(0)
+        uacpi::Handle::new(1)
     }
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         alloc::alloc::dealloc(ptr, layout);

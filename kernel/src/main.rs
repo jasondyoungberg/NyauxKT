@@ -2,13 +2,17 @@
 #![no_main]
 #![feature(naked_functions)]
 
-use core::arch::asm;
 
+
+extern crate alloc;
+use alloc::vec::Vec;
+use alloc::{alloc as other, vec};
 use core::fmt::Write;
 use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
 use owo_colors::OwoColorize;
+use NyauxKT::mem::{global, MemoryManager};
 use NyauxKT::{
     acpi::ACPIMANAGER,
     cpu::{
@@ -56,6 +60,8 @@ unsafe extern "C" fn kmain() -> ! {
                 hpet_addr_virt: 0,
                 time_per_tick_hpet: 0,
             };
+            
+            
             let mut x = ACPIMANAGER::new();
             
             cpu.init_lapic();
@@ -76,7 +82,7 @@ fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
 fn hcf() -> ! {
     unsafe {
         loop {
-            asm!("hlt");
+            core::arch::asm!("hlt");
         }
     }
 }

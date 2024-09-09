@@ -91,6 +91,7 @@ impl kmalloc_manager {
                 return i.slab_allocsearch();
             }
         }
+        println!("failed to find cache big enough: size {size}");
         None
     }
 }
@@ -197,7 +198,7 @@ impl slab_header {
             (*start).next = None;
             let mut prev = start;
 
-            println!("prev addr is {:#x}", prev as u64);
+            
 
             for i in 1..obj_amount {
                 let mut new = (start as u64 + (i as u64 * size as u64)) as *mut KTNode;
@@ -229,7 +230,7 @@ impl cache {
             unsafe {
                 if (*h.unwrap()).freelist.is_some() {
                     let mut new = (*h.unwrap()).freelist.unwrap();
-                    println!("new struct: {:?}", *new);
+                    
                     (*h.unwrap()).freelist = (*new).next;
                     return Some(new as *mut u8);
                 } else {
@@ -246,6 +247,7 @@ impl cache {
             (*h.unwrap()).next_slab = Some(new);
             let mut o = (*new).freelist.unwrap();
             (*new).freelist = (*o).next;
+            
             return Some(o as *mut u8);
         }
     }

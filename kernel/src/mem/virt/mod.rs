@@ -208,17 +208,17 @@ impl PageMap {
                 (PMM.alloc().unwrap() as u64 + HDDM_OFFSET.get_response().unwrap().offset())
                     as *mut VMMRegion,
             );
-            (*h.unwrap()).length = pages_in_hhdm as u64;
+            (*h.unwrap()).length = align_up(pages_in_hhdm * 0x1000, 4096) as u64;
             (*h.unwrap()).base = HDDM_OFFSET.get_response().unwrap().offset();
             (*h.unwrap()).flags = VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits();
 
             self.head = h;
             (*k.unwrap()).base = ADDR.get_response().unwrap().virtual_base();
-            (*k.unwrap()).length = unsafe { &THE_REAL as *const _ as usize } as u64;
+            (*k.unwrap()).length = unsafe { align_up(&THE_REAL as *const _ as usize, 4096) } as u64;
             (*k.unwrap()).flags = VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits();
             (*h.unwrap()).next = k;
-            println!("Kernel Region: {:#?}", (*k.unwrap()));
-            println!("HHDM Region: {:#?}", (*h.unwrap()));
+            println!("Kernel Region: base: {:#x}", (*k.unwrap()).base);
+            println!("HHDM Region: base: {:#x}", (*h.unwrap()).base);
         }
     }
     pub fn vmm_region_dealloc(&mut self, addr: u64) {
@@ -273,6 +273,8 @@ impl PageMap {
                     (*new_guy).length = align_up(size as usize, 4096) as u64;
                     (*prev_node.unwrap()).next = Some(new_guy);
                     (*new_guy).next = cur_node;
+                    (*new_guy).flags = flags;
+                    println!("returning vmm region of base: {:#x}", (*new_guy).base);
                     let amou = align_up(size as usize, 4096) / 4096;
                     for i in 0..amou {
                         let mut e = PMM.alloc().unwrap();
@@ -282,6 +284,7 @@ impl PageMap {
                         self.map((*new_guy).base + (i * 0x1000) as u64, e as u64, flags)
                             .unwrap();
                     }
+                    
                     return Some((*new_guy).base as *mut u8);
                 } else {
                     prev_node = cur_node;
@@ -412,6 +415,7 @@ impl PageMap {
 
         q.switch_to();
         q.region_setup(hhdm_pages);
+        
         unsafe { cur_pagemap = Some(q) };
     }
 }
