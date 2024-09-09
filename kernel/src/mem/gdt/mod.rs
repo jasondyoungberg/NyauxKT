@@ -2,37 +2,34 @@ use core::{arch::global_asm, ffi::c_void, ptr::addr_of};
 global_asm!(include_str!("flush.s"));
 #[repr(C, packed)]
 
-struct GDTR
-{
+struct GDTR {
     size: u16,
-    offset: u64
+    offset: u64,
 }
-impl GDTR
-{
-    fn new(table: u64, size: u16) -> GDTR
-    {
-        GDTR { size: size - 1, offset: table }
+impl GDTR {
+    fn new(table: u64, size: u16) -> GDTR {
+        GDTR {
+            size: size - 1,
+            offset: table,
+        }
     }
 }
 #[repr(C, packed)]
-struct GDTDescriptor
-{
+struct GDTDescriptor {
     limit_low: u16,
     base_low: u16,
     base_mid: u8,
     access_byte: u8,
     flag_an_hilim: u8,
-    base_hi: u8 
+    base_hi: u8,
 }
 // this is useless lol
-static mut gdt: [u64; 9] = [0,0,0,0,0,0,0,0,0];
-static mut gdtptr: GDTR = GDTR{size: 0, offset: 0};
-extern "C"
-{
+static mut gdt: [u64; 9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+static mut gdtptr: GDTR = GDTR { size: 0, offset: 0 };
+extern "C" {
     fn gdt_flush(a: *const c_void);
 }
-pub fn init_gdt()
-{
+pub fn init_gdt() {
     unsafe {
         gdt[0] = 0x0;
         gdt[1] = 0x00009a000000ffff;

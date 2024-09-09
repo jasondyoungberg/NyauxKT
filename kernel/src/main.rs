@@ -2,15 +2,25 @@
 #![no_main]
 #![feature(naked_functions)]
 
+use core::arch::asm;
 
-use core::{arch::asm};
-
+use core::fmt::Write;
+use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
-use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
-use NyauxKT::{acpi::ACPIMANAGER, cpu::{self, lapic::{self, LAPIC}}, idt::InterruptManager, mem::phys::{HDDM_OFFSET, PMM}, println, utils::{self, KTError}, TERM};
-use core::fmt::Write;
 use owo_colors::OwoColorize;
+use NyauxKT::{
+    acpi::ACPIMANAGER,
+    cpu::{
+        self,
+        lapic::{self, LAPIC},
+    },
+    idt::InterruptManager,
+    mem::phys::{HDDM_OFFSET, PMM},
+    println,
+    utils::{self, KTError},
+    TERM,
+};
 /// Sets the base revision to the latest revision supported by the crate.
 /// See specification for further info.
 // Be sure to mark all limine requests with #[used], otherwise they may be removed by the compiler.
@@ -28,11 +38,9 @@ unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
     assert!(BASE_REVISION.is_supported());
-    
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
         if let Some(framebuffer) = framebuffer_response.framebuffers().next() {
-            
             TERM.lock().init_basic(framebuffer);
             NyauxKT::mem::gdt::init_gdt();
             NyauxKT::mem::phys::PhysicalAllocator::new();
@@ -41,11 +49,17 @@ unsafe extern "C" fn kmain() -> ! {
             NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
-            let mut cpu = cpu::CPU {cpu_id: 0,lapic_addr: 0, hpet_addr_virt: 0, time_per_tick_hpet: 0};
+            println!("IDT [{}]", "Okay".bright_green());
+            let mut cpu = cpu::CPU {
+                cpu_id: 0,
+                lapic_addr: 0,
+                hpet_addr_virt: 0,
+                time_per_tick_hpet: 0,
+            };
             let mut x = ACPIMANAGER::new();
             
-            cpu.init_lapic(&mut x);
-            
+            cpu.init_lapic();
+            println!("LAPIC [{}]", "Okay".bright_green());
         }
     }
 
@@ -54,7 +68,6 @@ unsafe extern "C" fn kmain() -> ! {
 
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
-    
     //TERM.lock().clear_screen(0xFF0000);
     println!("KT Kernel Panic!: {}", _info);
     hcf();
@@ -62,7 +75,6 @@ fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
 
 fn hcf() -> ! {
     unsafe {
-        asm!("cli");
         loop {
             asm!("hlt");
         }

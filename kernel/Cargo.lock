@@ -6,7 +6,6 @@ version = 3
 name = "NyauxKT"
 version = "0.1.0"
 dependencies = [
- "acpi",
  "bitflags",
  "cc",
  "flanterm_bindings",
@@ -15,17 +14,8 @@ dependencies = [
  "nasm-rs",
  "owo-colors",
  "spin",
+ "uacpi",
  "volatile",
-]
-
-[[package]]
-name = "acpi"
-version = "5.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e248409195304021f61b39ba2628f62a45a3abf6119669d44b3399d60eabe4c3"
-dependencies = [
- "bit_field",
- "log",
 ]
 
 [[package]]
@@ -67,10 +57,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "bit_field"
-version = "0.10.2"
+name = "bindgen"
+version = "0.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc827186963e592360843fb5ba4b973e145841266c1357f7180c43526f2e5b61"
+checksum = "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f"
+dependencies = [
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "itertools",
+ "log",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash",
+ "shlex",
+ "syn",
+]
 
 [[package]]
 name = "bitflags"
@@ -80,9 +84,9 @@ checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
 
 [[package]]
 name = "cc"
-version = "1.1.13"
+version = "1.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72db2f7947ecee9b03b510377e8bb9077afa27176fdbff55c51027e976fdcc48"
+checksum = "b62ac837cdb5cb22e10a256099b4fc502b1dfe560cb282963a974d7abd80e476"
 dependencies = [
  "shlex",
 ]
@@ -135,7 +139,7 @@ version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cf92e89763f02530ec7fde0d23ccee6c8a6e9d55cb6e17edfe1fa1bd662ad3f"
 dependencies = [
- "bindgen",
+ "bindgen 0.69.4",
  "cc",
 ]
 
@@ -371,6 +375,24 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "uacpi"
+version = "0.1.0"
+source = "git+https://github.com/Qwinci/uacpi-rs#bdfded03b59e5383f15fe3f7613303a221308dcd"
+dependencies = [
+ "log",
+ "uacpi-sys",
+]
+
+[[package]]
+name = "uacpi-sys"
+version = "0.1.0"
+source = "git+https://github.com/Qwinci/uacpi-rs#bdfded03b59e5383f15fe3f7613303a221308dcd"
+dependencies = [
+ "bindgen 0.70.1",
+ "cc",
 ]
 
 [[package]]
