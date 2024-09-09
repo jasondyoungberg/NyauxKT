@@ -85,7 +85,7 @@ impl uacpi::kernel_api::KernelApi for acpi
             Err(uacpi::Status::Unimplemented)
     }
     fn log(&self, log_level: uacpi::LogLevel, string: &str) {
-        println!("KT kernel info uacpi: {}", string);
+        print!("KT kernel info uacpi: {}", string);
     }
     unsafe fn map(&self, phys: uacpi::PhysAddr, len: usize) -> *mut core::ffi::c_void {
         (phys.as_u64() + HDDM_OFFSET.get_response().unwrap().offset()) as *mut _
