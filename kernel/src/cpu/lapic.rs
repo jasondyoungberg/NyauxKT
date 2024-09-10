@@ -115,7 +115,7 @@ impl LAPIC for CPU {
                 // read sdm for more info
                 self.write_lapic_register(0x320, 34 | (0 << 16) | (1 << 17));
 
-               
+                    core ::arch::asm!("sti");
             } else {
                 panic!("wtf");
             }
