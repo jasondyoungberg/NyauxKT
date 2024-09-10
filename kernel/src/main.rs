@@ -5,8 +5,10 @@
 
 
 extern crate alloc;
+use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{alloc as other, vec};
+use NyauxKT::fs::vfs::get_rest_of_path;
 use core::fmt::Write;
 use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
 use limine::request::FramebufferRequest;
@@ -66,6 +68,17 @@ unsafe extern "C" fn kmain() -> ! {
             
             cpu.init_lapic();
             println!("LAPIC [{}]", "Okay".bright_green());
+            
+            
+            let test = get_rest_of_path(String::from("/usr/bin/bash"));
+            let p = get_rest_of_path(test);
+            println!("{p}");
+            let poop = get_rest_of_path(p);
+            println!("{poop}");
+            let ches = get_rest_of_path(poop);
+            
+            println!("{ches}");
+            core::arch::asm!("cli");
         }
     }
 

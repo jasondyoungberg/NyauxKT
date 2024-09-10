@@ -3,7 +3,7 @@ use core::{
     alloc::{GlobalAlloc, Layout}, ffi::c_void, ptr::NonNull, u8
 };
 use limine::request::RsdpRequest;
-use uacpi::{kernel_api::{self, set_kernel_api, KernelApi}, CpuFlags};
+use uacpi::{kernel_api::{self, set_kernel_api, KernelApi}, CpuFlags, IOAddr, PhysAddr};
 
 extern crate alloc;
 use crate::{
@@ -11,11 +11,27 @@ use crate::{
         phys::{PhysicalAllocator, HDDM_OFFSET},
         virt::{cur_pagemap, VMMFlags},
         MemoryManager,
-    },
-    println, utils::{self, read_from_portu16, read_from_portu32, read_from_portu8, write_to_portu16, write_to_portu32, write_to_portu8},
+    }, print, println, utils::{self, read_from_portu16, read_from_portu32, read_from_portu8, write_to_portu16, write_to_portu32, write_to_portu8}
 };
 use alloc::boxed::Box;
-
+struct io_range
+{
+    base: IOAddr,
+    len: usize
+}
+impl io_range
+{
+    fn new(base: IOAddr, len: usize) -> Box<io_range>
+    {
+        Box::new(
+            io_range
+            {
+                base: base,
+                len: len
+            }
+        )
+    }
+}
 #[used]
 #[link_section = ".requests"]
 static RSDP: RsdpRequest = RsdpRequest::new();
@@ -64,15 +80,23 @@ impl uacpi::kernel_api::KernelApi for acpi
     }
     fn install_interrupt_handler(&self, irq: u32, handler: Box<dyn Fn()>,
         ) -> Result<uacpi::Handle, uacpi::Status> {
-        Err(uacpi::Status::Unimplemented)
+            println!("h");
+        Ok(uacpi::Handle::new(1))
     }
     unsafe fn io_map(&self, base: uacpi::IOAddr, len: usize) -> Result<uacpi::Handle, uacpi::Status> {
-        todo!()
+        
+        Ok(
+            uacpi::Handle::new(base.as_u64())
+            
+        )
+        
     }
     unsafe fn io_read(&self, handle: uacpi::Handle, offset: usize, byte_width: u8) -> Result<u64, uacpi::Status> {
-        todo!()
+        let it = handle.as_u64();
+        self.raw_io_read(IOAddr::new(it + offset as u64), byte_width)
     }
     unsafe fn io_unmap(&self, handle: uacpi::Handle) {
+        println!("a");
         todo!()
     }
     unsafe fn io_write(
@@ -82,10 +106,12 @@ impl uacpi::kernel_api::KernelApi for acpi
             byte_width: u8,
             val: u64,
         ) -> Result<(), uacpi::Status> {
-            Err(uacpi::Status::Unimplemented)
+            let it = handle.as_u64();
+            self.raw_io_write(IOAddr::new(it + offset as u64), byte_width, val)
+            
     }
     fn log(&self, log_level: uacpi::LogLevel, string: &str) {
-        print!("KT kernel info uacpi: {}", string);
+        print!("{}", string);
     }
     unsafe fn map(&self, phys: uacpi::PhysAddr, len: usize) -> *mut core::ffi::c_void {
         (phys.as_u64() + HDDM_OFFSET.get_response().unwrap().offset()) as *mut _
@@ -240,7 +266,7 @@ impl ACPIMANAGER
         let x = ACPIMANAGER(alloc::sync::Arc::new(acpi));
         set_kernel_api(alloc::sync::Arc::clone(&x.0));
         uacpi::init(uacpi::PhysAddr::new(RSDP.get_response().unwrap()
-        .address() as u64 - HDDM_OFFSET.get_response().unwrap().offset() as u64), uacpi::LogLevel::TRACE, false).unwrap();
+        .address() as u64 - HDDM_OFFSET.get_response().unwrap().offset() as u64), uacpi::LogLevel::TRACE, false);
         
         uacpi::namespace_load().unwrap();
         uacpi::namespace_initialize().unwrap();

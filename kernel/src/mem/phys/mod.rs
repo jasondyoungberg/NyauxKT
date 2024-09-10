@@ -91,7 +91,7 @@ impl kmalloc_manager {
                 return i.slab_allocsearch();
             }
         }
-        println!("failed to find cache big enough: size {size}");
+        
         None
     }
 }
@@ -114,7 +114,7 @@ pub static mut kmalloc_manager: Option<kmalloc_manager> = None;
 
 impl PhysicalAllocator {
     pub fn new() -> Result<(), &'static str> {
-        println!("{}", "--Memory MAP--".red());
+        println!("{}", "--Memory MAP--".bright_blue());
         let entries = unsafe { MEMMAP.get_response().unwrap().entries() };
 
         let mut new = PhysicalAllocator { head: None };
@@ -167,7 +167,7 @@ impl PhysicalAllocator {
     pub fn dealloc(&mut self, addr: *mut u8) -> Result<(), KTError> {
         let mut w = self.head.unwrap();
         let e = align_down(addr as usize, 4096);
-        println!("returning address of aligned addr: {:#x}", e);
+        
 
         let node: *mut KTNode = addr as *mut KTNode;
         unsafe {

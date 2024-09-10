@@ -135,9 +135,9 @@ dependencies = [
 
 [[package]]
 name = "flanterm_bindings"
-version = "1.0.5"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cf92e89763f02530ec7fde0d23ccee6c8a6e9d55cb6e17edfe1fa1bd662ad3f"
+checksum = "163ff28c4b1df8ac3d8fd6a8dc0e20ac40d660d87189e9764fbe844ccbae5bcd"
 dependencies = [
  "bindgen 0.69.4",
  "cc",

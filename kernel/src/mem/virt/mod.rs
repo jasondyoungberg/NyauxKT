@@ -274,7 +274,7 @@ impl PageMap {
                     (*prev_node.unwrap()).next = Some(new_guy);
                     (*new_guy).next = cur_node;
                     (*new_guy).flags = flags;
-                    println!("returning vmm region of base: {:#x}", (*new_guy).base);
+                    
                     let amou = align_up(size as usize, 4096) / 4096;
                     for i in 0..amou {
                         let mut e = PMM.alloc().unwrap();
@@ -370,7 +370,7 @@ impl PageMap {
             )
             .unwrap();
         }
-        println!("{}", "kernel mapped. mapping HHDM...".on_bright_magenta());
+        println!("{1} {0}", "mapped. mapping HHDM...".on_bright_magenta(), "Kernel".on_green());
         let entries = unsafe { MEMMAP.get_response_mut().unwrap().entries_mut() };
         let mut hhdm_pages = 0;
         for i in (0..0x100000000 as u64).step_by(4096) {
