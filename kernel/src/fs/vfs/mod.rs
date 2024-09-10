@@ -30,7 +30,7 @@ pub fn get_rest_of_path(path: alloc::string::String) -> alloc::string::String {
     else {
         Some(path.as_str())
     }.unwrap();
-    alloc::string::String::new()
+    alloc::string::String::from("fuck u")
     
    
     

@@ -78,7 +78,7 @@ unsafe extern "C" fn kmain() -> ! {
             let ches = get_rest_of_path(poop);
             
             println!("{ches}");
-            core::arch::asm!("cli");
+            
         }
     }
 

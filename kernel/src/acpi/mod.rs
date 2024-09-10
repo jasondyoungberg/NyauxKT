@@ -37,6 +37,7 @@ impl io_range
 static RSDP: RsdpRequest = RsdpRequest::new();
 #[derive(Clone, Debug)]
 pub struct acpi;
+static mut o: i32 = 0;
 impl uacpi::kernel_api::KernelApi for acpi
 {
     fn acquire_mutex(&self, mutex: uacpi::Handle, timeout: u16) -> bool {
@@ -52,7 +53,11 @@ impl uacpi::kernel_api::KernelApi for acpi
         uacpi::Handle::new(1)
     }
     fn create_mutex(&self) -> uacpi::Handle {
-        uacpi::Handle::new(1)
+        unsafe {
+            o = o + 1;
+            uacpi::Handle::new(o as u64)
+        }
+        
     }
     fn create_spinlock(&self) -> uacpi::Handle {
         uacpi::Handle::new(1)
