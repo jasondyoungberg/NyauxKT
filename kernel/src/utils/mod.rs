@@ -87,7 +87,15 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
+    unsafe {
+        core::arch::asm!("cli");
+    }
+
     TERM.lock().write_fmt(args).unwrap();
+    unsafe {
+        core::arch::asm!("sti");
+    }
+    
 }
 #[derive(Debug)]
 pub enum KTError {
