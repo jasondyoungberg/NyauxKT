@@ -88,5 +88,6 @@ unsafe impl GlobalAlloc for MemoryManager {
         }
     }
 }
-#[global_allocator]
+#[cfg_attr(not(test), no_main, no_std)]
+#[cfg_attr(target_os = "none", global_allocator)]
 pub static global: MemoryManager = MemoryManager;

@@ -1,4 +1,4 @@
-use crate::println;
+
 
 // Stolen from the r3 kernel, credits to Narasimha Prasanna <3
 #[inline]
@@ -20,5 +20,5 @@ fn oct_to_usize(buffer: &[u8]) -> usize {
 #[test]
 fn test()
 {
-    println!("hi");
+    
 }
