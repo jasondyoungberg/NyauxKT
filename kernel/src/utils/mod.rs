@@ -8,7 +8,7 @@ use limine::framebuffer::Framebuffer;
 use spin::mutex::Mutex;
 
 use crate::TERM;
-const BG: u32 = 0x181a21;
+const BG: u32 = 0x000000;
 const FG: u32 = 0xe3e3de;
 pub struct NyauxTerm {
     ctx: Option<*mut flanterm_bindings::flanterm_context>,

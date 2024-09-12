@@ -1,8 +1,7 @@
-#![no_std]
-#![no_main]
+
 #![feature(naked_functions)]
 #![allow(unused, non_snake_case, non_camel_case_types, non_upper_case_globals)]
-
+#![cfg_attr(not(test), no_std, no_main)]
 
 extern crate alloc;
 use alloc::string::String;
@@ -40,6 +39,7 @@ static BASE_REVISION: BaseRevision = BaseRevision::new();
 static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 
 #[no_mangle]
+#[cfg(not(test))]
 unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
@@ -76,13 +76,13 @@ unsafe extern "C" fn kmain() -> ! {
     hcf();
 }
 
+#[cfg(not(test))]
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
     //TERM.lock().clear_screen(0xFF0000);
     println!("KT Kernel Panic!: {}", _info);
     hcf();
 }
-
 fn hcf() -> ! {
     unsafe {
         loop {

@@ -95,6 +95,8 @@ $(IMAGE_NAME).iso: limine/limine kernel
 	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	cp -v limine/BOOTIA32.EFI iso_root/EFI/BOOT/
 	cp -v background.bmp iso_root/boot/
+	tar -H ustar -cf initramfs.tar sysroot/*
+	cp -v initramfs.tar iso_root/boot/
 	xorriso -as mkisofs -b boot/limine/limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot boot/limine/limine-uefi-cd.bin \
@@ -102,6 +104,7 @@ $(IMAGE_NAME).iso: limine/limine kernel
 		iso_root -o $(IMAGE_NAME).iso
 	./limine/limine bios-install $(IMAGE_NAME).iso
 	rm -rf iso_root
+	rm initramfs.tar
 
 $(IMAGE_NAME).hdd: limine/limine kernel
 	rm -f $(IMAGE_NAME).hdd
