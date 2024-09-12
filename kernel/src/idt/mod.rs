@@ -1,9 +1,8 @@
-use core::{arch::global_asm, ffi::c_void};
+use core::ffi::c_void;
 
 use crate::{
     cpu::{
-        self,
-        lapic::{self, LAPIC},
+        lapic::{LAPIC},
         CPU,
     },
     mem::phys::HDDM_OFFSET,

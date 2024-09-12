@@ -46,7 +46,7 @@ impl PageMap {
                 panic!("fucking helllll");
             }
             if (*table.offset(index as isize)) & VMMFlags::KTPRESENT.bits() == 0 {
-                if (allocate == true) {
+                if allocate == true {
                     let mut new_table = PMM.alloc().unwrap() as *mut u64;
                     new_table = (new_table as u64 + HDDM_OFFSET.get_response().unwrap().offset())
                         as *mut u64;
@@ -224,7 +224,7 @@ impl PageMap {
     pub fn vmm_region_dealloc(&mut self, addr: u64) {
         let mut cur_node = self.head;
         let mut prev_node: Option<*mut VMMRegion> = None;
-        while (cur_node.is_none() == false) {
+        while cur_node.is_none() == false {
             unsafe {
                 if (*cur_node.unwrap()).base == addr {
                     if (*cur_node.unwrap()).next.is_some() {
@@ -252,7 +252,7 @@ impl PageMap {
     pub fn vmm_region_alloc(&mut self, size: u64, flags: u64) -> Option<*mut u8> {
         let mut cur_node = self.head;
         let mut prev_node = None;
-        while (cur_node.is_none() == false) {
+        while cur_node.is_none() == false {
             if prev_node.is_none() {
                 prev_node = cur_node;
                 unsafe {
@@ -266,7 +266,7 @@ impl PageMap {
                     - ((*prev_node.unwrap()).base + (*prev_node.unwrap()).length))
                     >= align_up(size as usize, 4096) as u64 + 0x1000
                 {
-                    let mut new_guy = (PMM.alloc().unwrap() as u64
+                    let new_guy = (PMM.alloc().unwrap() as u64
                         + HDDM_OFFSET.get_response().unwrap().offset())
                         as *mut VMMRegion;
                     (*new_guy).base = (*prev_node.unwrap()).base + (*prev_node.unwrap()).length;
@@ -274,7 +274,7 @@ impl PageMap {
                     (*prev_node.unwrap()).next = Some(new_guy);
                     (*new_guy).next = cur_node;
                     (*new_guy).flags = flags;
-                    
+
                     let amou = align_up(size as usize, 4096) / 4096;
                     for i in 0..amou {
                         let mut e = PMM.alloc().unwrap();
@@ -284,7 +284,7 @@ impl PageMap {
                         self.map((*new_guy).base + (i * 0x1000) as u64, e as u64, flags)
                             .unwrap();
                     }
-                    
+
                     return Some((*new_guy).base as *mut u8);
                 } else {
                     prev_node = cur_node;
@@ -304,7 +304,7 @@ impl PageMap {
     ) -> Option<*mut u8> {
         let mut cur_node = self.head;
         let mut prev_node = None;
-        while (cur_node.is_none() == false) {
+        while cur_node.is_none() == false {
             if prev_node.is_none() {
                 prev_node = cur_node;
                 unsafe {
@@ -318,7 +318,7 @@ impl PageMap {
                     - ((*prev_node.unwrap()).base + (*prev_node.unwrap()).length))
                     >= align_up(size as usize, 4096) as u64 + 0x1000
                 {
-                    let mut new_guy = (PMM.alloc().unwrap() as u64
+                    let new_guy = (PMM.alloc().unwrap() as u64
                         + HDDM_OFFSET.get_response().unwrap().offset())
                         as *mut VMMRegion;
                     (*new_guy).base = (*prev_node.unwrap()).base + (*prev_node.unwrap()).length;
@@ -370,7 +370,11 @@ impl PageMap {
             )
             .unwrap();
         }
-        println!("{1} {0}", "mapped. mapping HHDM...".on_bright_magenta(), "Kernel".on_green());
+        println!(
+            "{1} {0}",
+            "mapped. mapping HHDM...".on_bright_magenta(),
+            "Kernel".on_green()
+        );
         let entries = unsafe { MEMMAP.get_response_mut().unwrap().entries_mut() };
         let mut hhdm_pages = 0;
         for i in (0..0x100000000 as u64).step_by(4096) {
@@ -415,7 +419,7 @@ impl PageMap {
 
         q.switch_to();
         q.region_setup(hhdm_pages);
-        
+
         unsafe { cur_pagemap = Some(q) };
     }
 }

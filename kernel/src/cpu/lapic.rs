@@ -1,13 +1,7 @@
-
-
 use uacpi::{Hpet, HPET_SIGNATURE};
 
 use crate::{
-    acpi::ACPIMANAGER,
-    mem::{
-        phys::{align_down, align_up, HDDM_OFFSET},
-        virt::{cur_pagemap, VMMFlags},
-    },
+    mem::phys::HDDM_OFFSET,
     println,
     utils::rdmsr,
 };
@@ -25,7 +19,7 @@ impl LAPIC for CPU {
     unsafe fn ksleep(&self, ms: u64) {
         let pol_start = *((self.hpet_addr_virt + 0x0f0) as *mut u64);
         let pol_cur = (self.hpet_addr_virt + 0x0f0) as *mut u64;
-        while ((*(pol_cur) - pol_start) * self.time_per_tick_hpet < ms * 1000000) {
+        while (*(pol_cur) - pol_start) * self.time_per_tick_hpet < ms * 1000000 {
             core::arch::asm!("nop");
         }
     }
@@ -51,8 +45,10 @@ impl LAPIC for CPU {
         // map lapic
 
         println!("addr of lapic for cpu: {:#x}", self.lapic_addr);
-        let hpet: *mut Hpet = uacpi::table_find_by_signature(HPET_SIGNATURE).unwrap().get_virt_addr() as *mut Hpet;
-        
+        let hpet: *mut Hpet = uacpi::table_find_by_signature(HPET_SIGNATURE)
+            .unwrap()
+            .get_virt_addr() as *mut Hpet;
+
         unsafe {
             core::arch::asm!(
                 "mov rax, {0}",
@@ -61,8 +57,8 @@ impl LAPIC for CPU {
                 out("rax") _,
             );
 
-            let q = (*hpet);
-            
+            let q = *hpet;
+
             // map hpet mmio LOL
             // cur_pagemap.as_mut().unwrap().map(q.base_address as u64 + HDDM_OFFSET.get_response().unwrap().offset() as u64, q.base_address as u64, VMMFlags::KTWRITEALLOWED.bits() | VMMFlags::KTPRESENT.bits()).unwrap();
             let mut it = *((q.address.address as u64
@@ -88,7 +84,8 @@ impl LAPIC for CPU {
                 it = *((q.address.address as u64
                     + HDDM_OFFSET.get_response().unwrap().offset() as u64
                     + 0x0f0) as *mut u64);
-                it = *((q.address.address as u64 + HDDM_OFFSET.get_response().unwrap().offset() as u64)
+                it = *((q.address.address as u64
+                    + HDDM_OFFSET.get_response().unwrap().offset() as u64)
                     as *mut u64);
                 it = it >> 32 & 0xFFFFFFFF;
                 it = it / 1000000; // TIME IN NANO SECONDS
@@ -115,7 +112,7 @@ impl LAPIC for CPU {
                 // read sdm for more info
                 self.write_lapic_register(0x320, 34 | (0 << 16) | (1 << 17));
 
-                    core ::arch::asm!("sti");
+                core::arch::asm!("sti");
             } else {
                 panic!("wtf");
             }

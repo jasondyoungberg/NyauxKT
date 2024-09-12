@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+#![allow(non_camel_case_types)]
 #![feature(const_nonnull_new)]
 #![feature(const_option)]
 #![feature(naked_functions)]

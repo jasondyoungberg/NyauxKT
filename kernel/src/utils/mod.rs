@@ -3,13 +3,18 @@ use core::convert::TryInto;
 use core::fmt;
 use core::mem::size_of_val;
 use core::option::Option::None;
-use flanterm_bindings;
-use limine::framebuffer::Framebuffer;
-use spin::mutex::Mutex;
 
+use flanterm_bindings;
+use limine::file::File;
+use limine::framebuffer::Framebuffer;
+use limine::request::ModuleRequest;
+use limine::response::ModuleResponse;
+use spin::mutex::Mutex;
+extern crate alloc;
 use crate::TERM;
 const BG: u32 = 0x000000;
 const FG: u32 = 0xe3e3de;
+static MODULES: limine::request::ModuleRequest = ModuleRequest::new();
 pub struct NyauxTerm {
     ctx: Option<*mut flanterm_bindings::flanterm_context>,
 }
@@ -95,7 +100,6 @@ pub fn _print(args: fmt::Arguments) {
     unsafe {
         //core::arch::asm!("sti");
     }
-    
 }
 #[derive(Debug)]
 pub enum KTError {
@@ -120,43 +124,64 @@ pub fn wrmsr(msr: u32, value: u64) {
     }
 }
 #[inline]
-    pub unsafe fn read_from_portu8(port: u16) -> u8 {
-        let value: u8;
-        unsafe {
-            core::arch::asm!("in al, dx", out("al") value, in("dx") port, options(nomem, nostack, preserves_flags));
-        }
-        value
+pub unsafe fn read_from_portu8(port: u16) -> u8 {
+    let value: u8;
+    unsafe {
+        core::arch::asm!("in al, dx", out("al") value, in("dx") port, options(nomem, nostack, preserves_flags));
     }
-    #[inline]
-    pub unsafe fn read_from_portu16(port: u16) -> u16 {
-        let value: u16;
-        unsafe {
-            core::arch::asm!("in ax, dx", out("ax") value, in("dx") port, options(nomem, nostack, preserves_flags));
-        }
-        value
+    value
+}
+#[inline]
+pub unsafe fn read_from_portu16(port: u16) -> u16 {
+    let value: u16;
+    unsafe {
+        core::arch::asm!("in ax, dx", out("ax") value, in("dx") port, options(nomem, nostack, preserves_flags));
     }
-    pub unsafe fn read_from_portu32(port: u16) -> u32 {
-        let value: u32;
-        unsafe {
-            core::arch::asm!("in eax, dx", out("eax") value, in("dx") port, options(nomem, nostack, preserves_flags));
-        }
-        value
+    value
+}
+pub unsafe fn read_from_portu32(port: u16) -> u32 {
+    let value: u32;
+    unsafe {
+        core::arch::asm!("in eax, dx", out("eax") value, in("dx") port, options(nomem, nostack, preserves_flags));
     }
-    #[inline]
-    pub unsafe fn write_to_portu8(port: u16, value: u8) {
-        unsafe {
-            core::arch::asm!("out dx, al", in("dx") port, in("al") value, options(nomem, nostack, preserves_flags));
-        }
+    value
+}
+#[inline]
+pub unsafe fn write_to_portu8(port: u16, value: u8) {
+    unsafe {
+        core::arch::asm!("out dx, al", in("dx") port, in("al") value, options(nomem, nostack, preserves_flags));
     }
-    #[inline]
-    pub unsafe fn write_to_portu16(port: u16, value: u16) {
-        unsafe {
-            core::arch::asm!("out dx, ax", in("dx") port, in("ax") value, options(nomem, nostack, preserves_flags));
-        }
+}
+#[inline]
+pub unsafe fn write_to_portu16(port: u16, value: u16) {
+    unsafe {
+        core::arch::asm!("out dx, ax", in("dx") port, in("ax") value, options(nomem, nostack, preserves_flags));
     }
-    #[inline]
-    pub unsafe fn write_to_portu32(port: u16, value: u32) {
-        unsafe {
-            core::arch::asm!("out dx, eax", in("dx") port, in("eax") value, options(nomem, nostack, preserves_flags));
-        }
+}
+#[inline]
+pub unsafe fn write_to_portu32(port: u16, value: u32) {
+    unsafe {
+        core::arch::asm!("out dx, eax", in("dx") port, in("eax") value, options(nomem, nostack, preserves_flags));
     }
+}
+pub fn get_limine_file(name: &str) -> Option<&File>
+{
+    
+    if let Some(modules) = MODULES.get_response()
+    {
+        let mut index = 0;
+        for i in modules.modules().iter()
+        {
+            use alloc::string::String;
+
+            let str = String::from_utf8(i.cmdline().to_vec()).unwrap();
+            
+            if str == name {
+                return Some(*i);
+            }
+            index += 1;
+        }
+        return None;
+    }
+    None
+}

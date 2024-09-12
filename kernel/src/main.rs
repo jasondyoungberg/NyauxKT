@@ -1,18 +1,29 @@
-
 #![feature(naked_functions)]
-#![allow(unused, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    unused,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals,
+    unused_variables,
+    unused_mut,
+    unused_parens,
+    unused_must_use,
+    unused_results,
+    non_camel_case_types,
+    
+)]
 #![cfg_attr(not(test), no_std, no_main)]
 
 extern crate alloc;
 use alloc::string::String;
 use alloc::vec::Vec;
 use alloc::{alloc as other, vec};
-use NyauxKT::fs::vfs::resolve_path;
 use core::fmt::Write;
 use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
 use owo_colors::OwoColorize;
+use NyauxKT::fs::vfs::resolve_path;
 use NyauxKT::mem::{global, MemoryManager};
 use NyauxKT::{
     acpi::ACPIMANAGER,
@@ -43,6 +54,8 @@ static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
+
+    use NyauxKT::fs::USTAR::ustarinit;
     assert!(BASE_REVISION.is_supported());
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
@@ -62,12 +75,12 @@ unsafe extern "C" fn kmain() -> ! {
                 hpet_addr_virt: 0,
                 time_per_tick_hpet: 0,
             };
-            
-            
+
             let mut x = ACPIMANAGER::new();
-            
+
             cpu.init_lapic();
             println!("LAPIC [{}]", "Okay".bright_green());
+            ustarinit();
             let mut a = resolve_path("/");
             println!("{:?}", a);
         }
