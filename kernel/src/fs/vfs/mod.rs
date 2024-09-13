@@ -2,6 +2,15 @@ extern crate alloc;
 use core::fmt::Debug;
 
 use alloc::boxed::Box;
+
+use crate::utils::UNIXERROR;
+#[derive(Debug)]
+pub enum vnodetype
+{
+    DIRECTORY,
+    FILE,
+    SYMLINK
+}
 pub struct vfs {
     vfs_next: Box<vfs>,
     vfs_ops: Box<dyn Vfsops>,
@@ -10,13 +19,16 @@ pub struct vfs {
 
 #[derive(Debug)]
 pub struct vnode {
-    ops: Box<dyn Vnodeops>,
+    pub ops: Box<dyn Vnodeops>,
+    pub flags: vnodetype,
+    pub data: *mut u8
 }
 // i love boxes
 
 pub trait Vnodeops {
-    fn v_rdwr(&mut self, v: &mut vnode, sizeofbuf: usize, offset: usize, buf: &mut u64, rw: i32);
-    fn v_lookup(&mut self, v: &mut vnode, part: &str, l: &mut Option<&mut vnode>);
+    fn v_rdwr(&mut self, v: &mut vnode, sizeofbuf: usize, offset: usize, buf: &mut u8, rw: i32) -> Result<usize, UNIXERROR>;
+    fn v_lookup(&mut self, v: &mut vnode, part: &str, l: &mut Option<&mut vnode>) -> UNIXERROR;
+    fn v_filesz(&mut self, v: &mut vnode) -> Result<usize, UNIXERROR>;
 }
 impl Debug for dyn Vnodeops {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

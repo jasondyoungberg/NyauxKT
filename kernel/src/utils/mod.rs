@@ -15,6 +15,18 @@ use crate::TERM;
 const BG: u32 = 0x000000;
 const FG: u32 = 0xe3e3de;
 static MODULES: limine::request::ModuleRequest = ModuleRequest::new();
+pub enum UNIXERROR
+{
+    ESUCCESS, // Successful Operation :)
+    EPERM, // Operation Not Permitted
+    ENOENT, // No Such File or Directory
+    ESRCH, // No such process
+    EINTR, // interrupt system call
+    EIO, // I/O error
+    ENXIO, // no such device or address
+    EISDIR, // is a directory
+    EINVAL, // invalid arugment
+}
 pub struct NyauxTerm {
     ctx: Option<*mut flanterm_bindings::flanterm_context>,
 }
