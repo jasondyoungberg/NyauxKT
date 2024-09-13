@@ -4,7 +4,7 @@ use core::fmt::Debug;
 use alloc::boxed::Box;
 
 use crate::utils::UNIXERROR;
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum vnodetype
 {
     DIRECTORY,
@@ -29,6 +29,8 @@ pub trait Vnodeops {
     fn v_rdwr(&mut self, v: &mut vnode, sizeofbuf: usize, offset: usize, buf: &mut u8, rw: i32) -> Result<usize, UNIXERROR>;
     fn v_lookup(&mut self, v: &mut vnode, part: &str, l: &mut Option<&mut vnode>) -> UNIXERROR;
     fn v_filesz(&mut self, v: &mut vnode) -> Result<usize, UNIXERROR>;
+    fn v_create(&mut self, v: &mut vnode, name: &str, result: &mut Option<*mut vnode>) -> UNIXERROR;
+    fn v_mkdir(&mut self, v: &mut vnode, name: &str, resilt: &mut Option<*mut vnode>) -> UNIXERROR;
 }
 impl Debug for dyn Vnodeops {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
