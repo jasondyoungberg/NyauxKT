@@ -279,7 +279,7 @@ impl PageMap {
                     for i in 0..amou {
                         let mut e = PMM.alloc().unwrap();
                         e = (e as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u8;
-                        e.write_bytes(0, 4096 / 8);
+                        e.write_bytes(0, 4096);
                         e = (e as u64 - HDDM_OFFSET.get_response().unwrap().offset()) as *mut u8;
                         self.map((*new_guy).base + (i * 0x1000) as u64, e as u64, flags)
                             .unwrap();
