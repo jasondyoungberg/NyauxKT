@@ -184,7 +184,7 @@ impl slab_header {
     fn init(size: usize) -> *mut Self {
         let mut area: *mut u64 = unsafe { PMM.alloc().unwrap() as *mut u64 };
         area = (area as u64 + HDDM_OFFSET.get_response().unwrap().offset()) as *mut u64;
-        unsafe { area.write_bytes(0, 4096 / 8) };
+        unsafe { area.write_bytes(0, 4096) };
         let header = (area) as *mut slab_header;
 
         unsafe {
