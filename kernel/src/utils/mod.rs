@@ -15,6 +15,7 @@ use crate::TERM;
 const BG: u32 = 0x000000;
 const FG: u32 = 0xe3e3de;
 static MODULES: limine::request::ModuleRequest = ModuleRequest::new();
+#[derive(PartialEq, Debug)]
 pub enum UNIXERROR
 {
     ESUCCESS, // Successful Operation :)
@@ -26,6 +27,8 @@ pub enum UNIXERROR
     ENXIO, // no such device or address
     EISDIR, // is a directory
     EINVAL, // invalid arugment
+    EISFILE, // is a file
+    ENOSYS
 }
 pub struct NyauxTerm {
     ctx: Option<*mut flanterm_bindings::flanterm_context>,

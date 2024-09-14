@@ -1,56 +1,100 @@
 extern crate alloc;
 use core::fmt::Debug;
+use core::ffi::CStr;
+use core::ops::Deref;
 
 use alloc::boxed::Box;
 
+
+use crate::fs::tmpfs::tmpfsdir;
 use crate::utils::UNIXERROR;
-#[derive(Debug, PartialEq)]
-pub enum vnodetype
-{
-    DIRECTORY,
-    FILE,
-    SYMLINK
-}
-pub struct vfs {
-    vfs_next: Box<vfs>,
-    vfs_ops: Box<dyn Vfsops>,
-    vnode: Box<vnode>,
+use crate::println;
+use alloc::rc::Rc;
+use core::cell::RefCell;
+
+
+pub trait vnode {
+    fn lookup(&self, child: &str) -> Result<Rc<RefCell<dyn vnode>>, UNIXERROR>;
+    fn read(&self, buf: &mut [u8], offset: usize) -> Result<usize, UNIXERROR>;
+    fn write(&mut self, buf: &[u8], offset: usize) -> Result<usize, UNIXERROR>;
+    fn mkdir(&mut self, name: &str) -> Result<Rc<RefCell<dyn vnode>>, UNIXERROR>;
+    fn create(&mut self, name: &str) -> Result<Rc<RefCell<dyn vnode>>, UNIXERROR>;
 }
 
-#[derive(Debug)]
-pub struct vnode {
-    pub ops: Box<dyn Vnodeops>,
-    pub flags: vnodetype,
-    pub data: *mut u8
-}
 // i love boxes
 
-pub trait Vnodeops {
-    fn v_rdwr(&mut self, v: &mut vnode, sizeofbuf: usize, offset: usize, buf: &mut u8, rw: i32) -> Result<usize, UNIXERROR>;
-    fn v_lookup(&mut self, v: &mut vnode, part: &str, l: &mut Option<&mut vnode>) -> UNIXERROR;
-    fn v_filesz(&mut self, v: &mut vnode) -> Result<usize, UNIXERROR>;
-    fn v_create(&mut self, v: &mut vnode, name: &str, result: &mut Option<*mut vnode>) -> UNIXERROR;
-    fn v_mkdir(&mut self, v: &mut vnode, name: &str, resilt: &mut Option<*mut vnode>) -> UNIXERROR;
-}
-impl Debug for dyn Vnodeops {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.write_str("no")
-    }
-}
-trait Vfsops {}
-static mut CUR_VFS: Option<&mut vfs> = None;
-pub fn resolve_path(path: &str) -> Option<&mut vnode> {
-    if path.is_empty() {
-        return None;
-    }
-    let i = 0;
+pub trait vfsops {
 
-    if path.starts_with('/') && path.len() == 1 {
-        unsafe {
-            if let Some(q) = &mut CUR_VFS {
-                return Some(&mut q.vnode);
-            }
+}
+pub struct vfs {
+    pub ops: Option<Box<dyn vfsops>>,
+    pub vnode: Option<Rc<RefCell<dyn vnode>>>,
+    pub next: Option<Box<vfs>>
+}
+
+use alloc::string::String;
+use alloc::string::ToString;
+
+use alloc::vec::Vec;
+
+use super::tmpfs;
+pub static mut CUR_VFS: Option<vfs> = None; 
+impl Default for vfs {
+    fn default() -> Self {
+        vfs {
+            ops: None,
+            vnode: None,
+            next: None
         }
     }
-    return None;
 }
+pub fn get_list(path: &str) -> Vec<&str>{
+    
+    let mut q: Vec<&str> = path.split('/').collect();
+    q.retain(|x| *x != "");
+    return q;
+}
+#[test]
+fn path() {
+    assert_eq!(["test", "hey", "yo"], *get_list("/test/hey/yo/"));
+
+    assert_eq!(["usr", "bin", "bash"], *get_list("/usr/bin/bash"));
+    
+    
+    let mut new = tmpfsdir::default();
+    if let Ok(q) = new.create("hi") {
+        assert_eq!(1, 1);
+        let mut buf = "hello world!\n".as_bytes();
+        let o = q.borrow_mut().write(&mut buf, 0).unwrap();
+            assert_eq!(1, 1);
+            let mut buf = [0; 256];
+            q.borrow_mut().read(&mut buf, 0).unwrap();
+            let ok = CStr::from_bytes_until_nul(&buf).unwrap().to_str().unwrap();
+            assert_eq!("hello world!\n", ok);
+            
+        
+        let tt = new.lookup("hi").unwrap();
+            let mut ttq = [0; 256];
+            tt.borrow_mut().read(&mut ttq, 1).unwrap();
+            let better = CStr::from_bytes_until_nul(&buf).unwrap().to_str().unwrap();
+            assert_eq!("hello world!\n", better);
+        
+    }
+    
+        
+}
+// impl vnode {
+//     fn vfs_create(&mut self, path: &str, typ: vnodetype, res: &mut Option<&mut vnode>) -> UNIXERROR {
+//         if path.is_empty() {
+//             return UNIXERROR::EINVAL;
+//         }
+//         let mut q = resolve_path(path);
+//         if let Some(q) = q{
+            
+//         }
+//         else {
+//             return UNIXERROR::ENOENT;
+//         }
+//         return UNIXERROR::ESUCCESS;
+//     }
+// }

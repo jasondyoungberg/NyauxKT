@@ -23,7 +23,7 @@ use flanterm_bindings::{self, flanterm_fb_init, flanterm_write};
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
 use owo_colors::OwoColorize;
-use NyauxKT::fs::vfs::resolve_path;
+
 use NyauxKT::mem::{global, MemoryManager};
 use NyauxKT::{
     acpi::ACPIMANAGER,
@@ -81,8 +81,9 @@ unsafe extern "C" fn kmain() -> ! {
             cpu.init_lapic();
             println!("LAPIC [{}]", "Okay".bright_green());
             ustarinit();
-            let mut a = resolve_path("/");
-            println!("{:?}", a);
+            println!("USTAR [{}]", "Okay".bright_green());
+            
+            
         }
     }
 
