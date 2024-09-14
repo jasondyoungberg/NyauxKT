@@ -1,5 +1,5 @@
 use core::alloc::GlobalAlloc;
-
+pub mod bump;
 use limine::{
     memory_map::EntryType,
     request::{HhdmRequest, MemoryMapRequest},

@@ -45,7 +45,11 @@ impl uacpi::kernel_api::KernelApi for Acpi {
         CpuFlags::new(0)
     }
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        alloc::alloc::alloc(layout)
+        let q= alloc::alloc::alloc_zeroed(layout);
+        if !(q as u64 % layout.align() as u64 == 0){
+            panic!("FUCK");
+        }
+        q
     }
     fn create_event(&self) -> uacpi::Handle {
         uacpi::Handle::new(1)

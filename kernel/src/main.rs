@@ -63,6 +63,7 @@ unsafe extern "C" fn kmain() -> ! {
             TERM.lock().init_basic(framebuffer);
             NyauxKT::mem::gdt::init_gdt();
             NyauxKT::mem::phys::PhysicalAllocator::new();
+            
             println!("PMM [{}]", "Okay".bright_green());
             println!("GDT [{}]", "Okay".bright_green());
             NyauxKT::mem::virt::PageMap::new_inital();
