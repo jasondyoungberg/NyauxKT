@@ -10,6 +10,7 @@ use limine::framebuffer::Framebuffer;
 use limine::request::ModuleRequest;
 use limine::response::ModuleResponse;
 use spin::mutex::Mutex;
+
 extern crate alloc;
 use crate::TERM;
 const BG: u32 = 0x000000;

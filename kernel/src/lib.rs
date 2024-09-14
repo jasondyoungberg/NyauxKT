@@ -12,6 +12,7 @@ pub mod fs;
 pub mod idt;
 pub mod mem;
 pub mod utils;
+pub mod drivers;
 
 lazy_static! {
     pub static ref TERM: Mutex<NyauxTerm> = NyauxTerm::new_none();

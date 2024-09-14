@@ -55,7 +55,7 @@ unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
 
-    use NyauxKT::fs::USTAR::ustarinit;
+    use NyauxKT::{drivers::apic::apic_init, fs::USTAR::ustarinit};
     assert!(BASE_REVISION.is_supported());
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
@@ -81,7 +81,9 @@ unsafe extern "C" fn kmain() -> ! {
             cpu.init_lapic();
             println!("LAPIC [{}]", "Okay".bright_green());
             ustarinit();
+            apic_init();
             println!("USTAR [{}]", "Okay".bright_green());
+            println!("APIC [{}]", "Okay".bright_green());
             
             
         }
