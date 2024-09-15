@@ -44,7 +44,7 @@ unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
 
-    use NyauxKT::{drivers::apic::apic_init, fs::USTAR::ustarinit};
+    use NyauxKT::{drivers::apic::apic_init, fs::USTAR::ustarinit, serial_println};
     assert!(BASE_REVISION.is_supported());
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
@@ -63,25 +63,19 @@ unsafe extern "C" fn kmain() -> ! {
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
             println!("IDT [{}]", "Okay".bright_green());
-            let mut cpu = cpu::CPU {
-                cpu_id: 0,
-                lapic_addr: 0,
-                hpet_addr_virt: 0,
-                time_per_tick_hpet: 0,
-            };
+            
             
             println!("Welcome to Nyaux!.");
             
             let mut x = ACPIMANAGER::new();
 
-            cpu.init_lapic();
-            println!("LAPIC [{}]", "Okay".bright_green());
+            
             ustarinit();
             apic_init();
             println!("USTAR [{}]", "Okay".bright_green());
             println!("APIC [{}]", "Okay".bright_green());
             
-
+            serial_println!("Everything is {}", "Okay".bright_green());
             
             
             

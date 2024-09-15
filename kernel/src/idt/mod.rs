@@ -112,7 +112,7 @@ extern "C" fn exception_handler(registers: u64) {
 #[no_mangle]
 pub extern "C" fn scheduler(registers: u64) {
     let got_registers = unsafe { *(registers as *mut Registers_Exception) };
-    //println!("tick");
+    
     let mut addr = rdmsr(0x1b);
     addr = addr & 0xfffff000;
     addr = addr + HDDM_OFFSET.get_response().unwrap().offset();
