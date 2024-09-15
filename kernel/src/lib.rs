@@ -1,5 +1,6 @@
 #![cfg_attr(not(test), no_std)]
-#![allow(non_camel_case_types)]
+#![allow(non_camel_case_types,dead_code, non_snake_case, unused_imports, non_upper_case_globals, unused_unsafe, unreachable_code
+, unused_attributes, unused_variables, unused_parens, unused_mut, unused_assignments)]
 #![feature(const_nonnull_new)]
 #![feature(const_option)]
 #![feature(naked_functions)]

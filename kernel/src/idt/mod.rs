@@ -2,12 +2,12 @@ use core::ffi::c_void;
 
 use crate::{
     cpu::{
-        lapic::{LAPIC},
+        lapic::LAPIC,
         CPU,
     },
     mem::phys::HDDM_OFFSET,
     println,
-    utils::rdmsr,
+    utils::{self, rdmsr},
 };
 
 #[repr(C)]
@@ -112,12 +112,23 @@ extern "C" fn exception_handler(registers: u64) {
 #[no_mangle]
 pub extern "C" fn scheduler(registers: u64) {
     let got_registers = unsafe { *(registers as *mut Registers_Exception) };
-    println!("tick");
+    //println!("tick");
     let mut addr = rdmsr(0x1b);
     addr = addr & 0xfffff000;
     addr = addr + HDDM_OFFSET.get_response().unwrap().offset();
+    
     CPU::send_lapic_eoi(addr);
 }
+// #[no_mangle]
+// pub extern "C" fn test(registers: u64) {
+//     let got_registers = unsafe { *(registers as *mut Registers_Exception) };
+//     println!("bop");
+//     unsafe {utils::read_from_portu8(0x60)};
+//     let mut addr = rdmsr(0x1b);
+//     addr = addr & 0xfffff000;
+//     addr = addr + HDDM_OFFSET.get_response().unwrap().offset();
+//     CPU::send_lapic_eoi(addr);
+// }
 pub fn idt_set_gate(num: u8, function_ptr: usize) {
     let base = function_ptr;
     unsafe {
@@ -257,6 +268,7 @@ exception_function!(0x08, double_fault);
 exception_function!(0x0D, general_protection_fault);
 exception_function!(0x0E, page_fault);
 exception_function_no_error!(34, schede, scheduler);
+// exception_function_no_error!(47, haha, test);
 
 static mut IDTR: IDTR = IDTR { offset: 0, size: 0 };
 extern "C" {
@@ -272,6 +284,7 @@ impl InterruptManager {
         idt_set_gate(0x0D, general_protection_fault as usize);
         idt_set_gate(0x0E, page_fault as usize);
         idt_set_gate(34, schede as usize);
+        // idt_set_gate(47, haha as usize);
         unsafe { IDTR.offset = IDT.as_ptr() as u64 };
 
         unsafe { IDTR.size = ((core::mem::size_of::<GateDescriptor>() * 256) - 1) as u16 };

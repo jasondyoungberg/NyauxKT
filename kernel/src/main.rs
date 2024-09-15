@@ -1,17 +1,6 @@
 #![feature(naked_functions)]
-#![allow(
-    unused,
-    non_snake_case,
-    non_camel_case_types,
-    non_upper_case_globals,
-    unused_variables,
-    unused_mut,
-    unused_parens,
-    unused_must_use,
-    unused_results,
-    non_camel_case_types,
-    
-)]
+#![allow(non_camel_case_types,dead_code, non_snake_case, unused_imports, non_upper_case_globals, unused_unsafe, unreachable_code
+    , unused_attributes, unused_variables, unused_parens, unused_mut, unused_assignments)]
 #![cfg_attr(not(test), no_std, no_main)]
 
 extern crate alloc;

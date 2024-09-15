@@ -156,7 +156,7 @@ pub fn _print(args: fmt::Arguments) {
 
     TERM.lock().write_fmt(args).unwrap();
     unsafe {
-        //core::arch::asm!("sti");
+        core::arch::asm!("sti");
     }
 }
 #[derive(Debug)]

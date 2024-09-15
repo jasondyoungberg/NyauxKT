@@ -263,7 +263,7 @@ impl ACPIMANAGER {
             ),
             uacpi::LogLevel::TRACE,
             false,
-        );
+        ).unwrap();
 
         uacpi::namespace_load().unwrap();
         uacpi::namespace_initialize().unwrap();

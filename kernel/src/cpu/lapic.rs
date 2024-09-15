@@ -14,6 +14,8 @@ pub trait LAPIC {
     fn read_lapic_register(&self, reg: u64) -> u32;
     fn send_lapic_eoi(lapic_addr: u64);
     fn init_lapic(&mut self);
+    fn read_lapic_id(lapic_addr: u64) -> u32;
+    fn get_lapic_addr() -> u64;
 }
 impl LAPIC for CPU {
     unsafe fn ksleep(&self, ms: u64) {
@@ -37,6 +39,14 @@ impl LAPIC for CPU {
     }
     fn send_lapic_eoi(lapic_addr: u64) {
         unsafe { core::ptr::write_volatile((lapic_addr + 0xb0) as *mut u32, 0) };
+    }
+    fn read_lapic_id(lapic_addr: u64) -> u32{
+        unsafe { return core::ptr::read_volatile((lapic_addr + 0x20) as *mut u32) };
+    }
+    fn get_lapic_addr() -> u64 {
+        let addr = rdmsr(0x1b);
+
+        return (addr & 0xfffff000) + HDDM_OFFSET.get_response().unwrap().offset();
     }
     fn init_lapic(&mut self) {
         let addr = rdmsr(0x1b);

@@ -18,6 +18,8 @@ pub trait vnode {
     fn read(&self, buf: &mut [u8], offset: usize) -> Result<usize, UNIXERROR>;
     fn write(&mut self, buf: &[u8], offset: usize) -> Result<usize, UNIXERROR>;
     fn mkdir(&mut self, name: &str) -> Result<Rc<RefCell<dyn vnode>>, UNIXERROR>;
+    fn is_symlink(&self) -> Result<bool, UNIXERROR>;
+    fn set_symlink(&mut self, bo: bool) -> Result<(), UNIXERROR>;
     fn create(&mut self, name: &str) -> Result<Rc<RefCell<dyn vnode>>, UNIXERROR>;
 }
 
@@ -54,6 +56,23 @@ pub fn get_list(path: &str) -> Vec<&str>{
     q.retain(|x| *x != "");
     return q;
 }
+pub fn resolve_path_absolute(path: &str, get_parent: bool) -> Result<Rc<RefCell<dyn vnode>>, UNIXERROR> {
+    let mut cur_dir = unsafe {&mut CUR_VFS.as_mut().unwrap().vnode};
+    let w =  get_list(path);
+    for (idx, i) in w.iter().enumerate() {
+        let res = cur_dir.as_mut().unwrap().borrow_mut().lookup(i);
+        if get_parent && w.get(idx + 1).is_none() {
+            break;
+        }
+        if let Ok(ress) = res{
+            *cur_dir = Some(ress);
+        }
+    }
+    if let Some(qq) = cur_dir {
+        return Ok(qq.clone());
+    }
+    return Err(UNIXERROR::ENOENT)
+}
 #[test]
 fn path() {
     assert_eq!(["test", "hey", "yo"], *get_list("/test/hey/yo/"));
@@ -76,11 +95,18 @@ fn path() {
         let tt = new.lookup("hi").unwrap();
             let mut ttq = [0; 256];
             tt.borrow_mut().read(&mut ttq, 1).unwrap();
-            let better = CStr::from_bytes_until_nul(&buf).unwrap().to_str().unwrap();
-            assert_eq!("hello world!\n", better);
+            let better = CStr::from_bytes_until_nul(&ttq).unwrap().to_str().unwrap();
+            assert_eq!("ello world!\n", better);
         
     }
-    
+    unsafe {CUR_VFS = Some(vfs { ops: None, vnode: None, next: None })}
+    unsafe {CUR_VFS.as_mut().unwrap().vnode = Some(Rc::new(RefCell::new(new)))};
+    if let Ok(w) = resolve_path_absolute("/hi", false) {
+        let mut ttq = [0; 256];
+            w.borrow_mut().read(&mut ttq, 0).unwrap();
+            let better = CStr::from_bytes_until_nul(&ttq).unwrap().to_str().unwrap();
+            assert_eq!("hello world!\n", better);
+    }
         
 }
 // impl vnode {

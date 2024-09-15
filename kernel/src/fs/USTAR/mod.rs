@@ -186,6 +186,7 @@ pub fn ustarinit()
                             let brooo = oct2bin(CStr::from_bytes_until_nul(&v).unwrap().to_str().unwrap());
                             let killme = gotyou.borrow_mut().write(
                                 &((*e).linkedfile)[..ches.len()], 0).unwrap();
+                            gotyou.borrow_mut().set_symlink(true).unwrap();
                             println!("wrote data of {} bytes.!", killme);
 
                         }

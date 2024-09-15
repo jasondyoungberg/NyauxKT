@@ -31,7 +31,8 @@ pub struct tmpfsdir {
     files: HashMap<String, Rc<RefCell<dyn vfs::vnode>>>
 }
 pub struct tmpfsfile {
-    data: alloc::vec::Vec<u8>
+    data: alloc::vec::Vec<u8>,
+    symlink: bool
 }
 impl Default for tmpfsdir {
     fn default() -> Self {
@@ -43,7 +44,8 @@ impl Default for tmpfsdir {
 impl<'a> Default for tmpfsfile {
     fn default() -> Self {
         Self {
-            data: alloc::vec::Vec::new()
+            data: alloc::vec::Vec::new(),
+            symlink: false
         }
     }
 }
@@ -88,6 +90,13 @@ impl vfs::vnode for tmpfsfile {
         // SO EASY
         return Ok(size);
     }
+    fn is_symlink(&self) -> Result<bool, UNIXERROR> {
+        Ok(self.symlink)
+    }
+    fn set_symlink(&mut self, bo: bool) -> Result<(), UNIXERROR> {
+        self.symlink = bo;
+        Ok(())
+    }
 }
 use alloc::string::ToString;
 impl vfs::vnode for tmpfsdir {
@@ -117,6 +126,12 @@ impl vfs::vnode for tmpfsdir {
         return Err(UNIXERROR::EISDIR);
     }
     fn write(&mut self, buf: &[u8], offset: usize) -> Result<usize, UNIXERROR> {
+        return Err(UNIXERROR::EISDIR);
+    }
+    fn is_symlink(&self) -> Result<bool, UNIXERROR> {
+        return Err(UNIXERROR::EISDIR);
+    }
+    fn set_symlink(&mut self, bo: bool) -> Result<(), UNIXERROR> {
         return Err(UNIXERROR::EISDIR);
     }
 }
