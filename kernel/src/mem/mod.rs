@@ -35,7 +35,7 @@ unsafe impl GlobalAlloc for MemoryManager {
             return KmallocManager.as_mut().unwrap().free(ptr as u64);
         }
     }
-    
+
     unsafe fn alloc_zeroed(&self, layout: core::alloc::Layout) -> *mut u8 {
         match KmallocManager.as_mut().unwrap().alloc(layout.size()) {
             Some(q) => {
@@ -53,7 +53,6 @@ unsafe impl GlobalAlloc for MemoryManager {
                     .unwrap();
             }
         }
-    
     }
 }
 #[cfg_attr(not(test), no_main, no_std)]

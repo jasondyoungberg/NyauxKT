@@ -1,6 +1,18 @@
 #![feature(naked_functions)]
-#![allow(non_camel_case_types,dead_code, non_snake_case, unused_imports, non_upper_case_globals, unused_unsafe, unreachable_code
-    , unused_attributes, unused_variables, unused_parens, unused_mut, unused_assignments)]
+#![allow(
+    non_camel_case_types,
+    dead_code,
+    non_snake_case,
+    unused_imports,
+    non_upper_case_globals,
+    unused_unsafe,
+    unreachable_code,
+    unused_attributes,
+    unused_variables,
+    unused_parens,
+    unused_mut,
+    unused_assignments
+)]
 #![cfg_attr(not(test), no_std, no_main)]
 
 extern crate alloc;
@@ -52,10 +64,9 @@ unsafe extern "C" fn kmain() -> ! {
             TERM.lock().init_basic(&framebuffer);
             NyauxKT::mem::gdt::init_gdt();
             NyauxKT::mem::phys::PhysicalAllocator::new();
-            
-            
+
             NyauxKT::mem::virt::PageMap::new_inital();
-            
+
             TERM.lock().deinit();
             TERM.lock().init(&framebuffer);
             println!("PMM [{}]", "Okay".bright_green());
@@ -63,24 +74,18 @@ unsafe extern "C" fn kmain() -> ! {
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
             println!("IDT [{}]", "Okay".bright_green());
-            
-            
+
             println!("Welcome to Nyaux!.");
-            
+
             let mut x = ACPIMANAGER::new();
 
-            
             ustarinit();
             apic_init();
             println!("USTAR [{}]", "Okay".bright_green());
             println!("APIC [{}]", "Okay".bright_green());
-            
+
             serial_println!("Everything is {}", "Okay".bright_green());
             init_smp();
-            
-            
-            
-            
         }
     }
 
@@ -94,7 +99,7 @@ fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
     println!("KT Kernel Panic!: {}", _info);
     hcf();
 }
-fn hcf() -> ! {
+pub fn hcf() -> ! {
     unsafe {
         loop {
             core::arch::asm!("hlt");

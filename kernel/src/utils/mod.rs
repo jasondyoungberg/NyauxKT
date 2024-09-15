@@ -11,26 +11,24 @@ use limine::request::ModuleRequest;
 use limine::response::ModuleResponse;
 use spin::mutex::Mutex;
 
-
 extern crate alloc;
 use crate::TERM;
 const BG: u32 = 0x000000;
 const FG: u32 = 0xe3e3de;
 static MODULES: limine::request::ModuleRequest = ModuleRequest::new();
 #[derive(PartialEq, Debug)]
-pub enum UNIXERROR
-{
+pub enum UNIXERROR {
     ESUCCESS, // Successful Operation :)
-    EPERM, // Operation Not Permitted
-    ENOENT, // No Such File or Directory
-    ESRCH, // No such process
-    EINTR, // interrupt system call
-    EIO, // I/O error
-    ENXIO, // no such device or address
-    EISDIR, // is a directory
-    EINVAL, // invalid arugment
-    EISFILE, // is a file
-    ENOSYS
+    EPERM,    // Operation Not Permitted
+    ENOENT,   // No Such File or Directory
+    ESRCH,    // No such process
+    EINTR,    // interrupt system call
+    EIO,      // I/O error
+    ENXIO,    // no such device or address
+    EISDIR,   // is a directory
+    EINVAL,   // invalid arugment
+    EISFILE,  // is a file
+    ENOSYS,
 }
 
 pub struct NyauxTerm {
@@ -76,7 +74,6 @@ impl NyauxTerm {
         }
     }
     pub fn deinit(&mut self) {
-        
         unsafe {
             ((*self.ctx.unwrap()).deinit.unwrap())(self.ctx.unwrap(), None);
         }
@@ -222,18 +219,14 @@ pub unsafe fn write_to_portu32(port: u16, value: u32) {
         core::arch::asm!("out dx, eax", in("dx") port, in("eax") value, options(nomem, nostack, preserves_flags));
     }
 }
-pub fn get_limine_file(name: &str) -> Option<&File>
-{
-    
-    if let Some(modules) = MODULES.get_response()
-    {
+pub fn get_limine_file(name: &str) -> Option<&File> {
+    if let Some(modules) = MODULES.get_response() {
         let mut index = 0;
-        for i in modules.modules().iter()
-        {
+        for i in modules.modules().iter() {
             use alloc::string::String;
 
             let str = String::from_utf8(i.cmdline().to_vec()).unwrap();
-            
+
             if str == name {
                 return Some(*i);
             }

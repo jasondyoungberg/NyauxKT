@@ -155,7 +155,7 @@ impl PhysicalAllocator {
             match unsafe { (*w).next } {
                 Some(e) => {
                     self.head = Some(e);
-                    unsafe {RAMUSAGE += 4096 as u64};
+                    unsafe { RAMUSAGE += 4096 as u64 };
                     return Ok((w as u64 - HDDM_OFFSET.get_response().unwrap().offset()) as *mut u8);
                 }
                 None => {
@@ -175,7 +175,7 @@ impl PhysicalAllocator {
             (*node).next = self.head;
             self.head = Some(node);
         }
-        unsafe {RAMUSAGE -= 4096 as u64};
+        unsafe { RAMUSAGE -= 4096 as u64 };
         Ok(())
     }
 }

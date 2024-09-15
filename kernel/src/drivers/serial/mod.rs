@@ -1,17 +1,13 @@
 use crate::utils;
 use core::fmt;
 use spin::mutex::Mutex;
-struct serial {
-
-}
+struct serial {}
 impl serial {
     pub fn serial_putc(&self, w: char) {
-    
-    unsafe {
-        utils::write_to_portu8(0x3F8 , w as u8);
+        unsafe {
+            utils::write_to_portu8(0x3F8, w as u8);
+        }
     }
-}
-
 }
 
 impl fmt::Write for serial {

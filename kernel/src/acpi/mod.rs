@@ -1,8 +1,4 @@
-use core::{
-    alloc::Layout,
-    ffi::c_void,
-    u8,
-};
+use core::{alloc::Layout, ffi::c_void, u8};
 use limine::request::RsdpRequest;
 use uacpi::{
     kernel_api::{set_kernel_api, KernelApi},
@@ -14,8 +10,8 @@ use crate::{
     mem::phys::HDDM_OFFSET,
     print, println,
     utils::{
-        read_from_portu16, read_from_portu32, read_from_portu8, write_to_portu16,
-        write_to_portu32, write_to_portu8,
+        read_from_portu16, read_from_portu32, read_from_portu8, write_to_portu16, write_to_portu32,
+        write_to_portu8,
     },
 };
 use alloc::boxed::Box;
@@ -45,8 +41,8 @@ impl uacpi::kernel_api::KernelApi for Acpi {
         CpuFlags::new(0)
     }
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        let q= alloc::alloc::alloc_zeroed(layout);
-        if !(q as u64 % layout.align() as u64 == 0){
+        let q = alloc::alloc::alloc_zeroed(layout);
+        if !(q as u64 % layout.align() as u64 == 0) {
             panic!("FUCK");
         }
         q
@@ -263,7 +259,8 @@ impl ACPIMANAGER {
             ),
             uacpi::LogLevel::TRACE,
             false,
-        ).unwrap();
+        )
+        .unwrap();
 
         uacpi::namespace_load().unwrap();
         uacpi::namespace_initialize().unwrap();

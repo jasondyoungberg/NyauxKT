@@ -1,10 +1,7 @@
 use core::ffi::c_void;
 
 use crate::{
-    cpu::{
-        lapic::LAPIC,
-        CPU,
-    },
+    cpu::{lapic::LAPIC, CPU},
     mem::phys::HDDM_OFFSET,
     println,
     utils::{self, rdmsr},
@@ -73,7 +70,7 @@ struct Registers {
 }
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-struct Registers_Exception {
+pub struct Registers_Exception {
     // Pushed by wrapper
     int: usize,
 
@@ -112,11 +109,11 @@ extern "C" fn exception_handler(registers: u64) {
 #[no_mangle]
 pub extern "C" fn scheduler(registers: u64) {
     let got_registers = unsafe { *(registers as *mut Registers_Exception) };
-    
+
     let mut addr = rdmsr(0x1b);
     addr = addr & 0xfffff000;
     addr = addr + HDDM_OFFSET.get_response().unwrap().offset();
-    
+
     CPU::send_lapic_eoi(addr);
 }
 // #[no_mangle]

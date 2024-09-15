@@ -2,19 +2,16 @@ use core::alloc::Layout;
 use core::iter::Map;
 use core::ptr::addr_of_mut;
 
-
-
 use crate::utils::UNIXERROR;
 
-
 extern crate alloc;
-use alloc::rc::Rc;
-use hashbrown::HashMap;
 use alloc::boxed::Box;
+use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::string::String as privatetype;
+use hashbrown::HashMap;
 
-use super::vfs;
+use super::vfs::{self, vnodeattributetable};
 // struct tmpfsfile {
 //     data: Option<*mut u8>,
 //     size: usize
@@ -28,16 +25,21 @@ use super::vfs;
 //     pub head: Option<Box<tmpfsdirentry>>
 // }
 pub struct tmpfsdir {
-    files: HashMap<String, Rc<RefCell<dyn vfs::vnode>>>
+    files: HashMap<String, Rc<RefCell<dyn vfs::vnode>>>,
+    attrib: vnodeattributetable,
 }
 pub struct tmpfsfile {
     data: alloc::vec::Vec<u8>,
-    symlink: bool
+    attrib: vnodeattributetable,
 }
 impl Default for tmpfsdir {
     fn default() -> Self {
         Self {
             files: HashMap::new(),
+            attrib: vnodeattributetable {
+                size: 0,
+                TYPE: super::VNODEFLAGS::DIR,
+            },
         }
     }
 }
@@ -45,7 +47,10 @@ impl<'a> Default for tmpfsfile {
     fn default() -> Self {
         Self {
             data: alloc::vec::Vec::new(),
-            symlink: false
+            attrib: vnodeattributetable {
+                size: 0,
+                TYPE: super::VNODEFLAGS::FILE,
+            },
         }
     }
 }
@@ -60,12 +65,12 @@ impl vfs::vnode for tmpfsfile {
     fn mkdir(&mut self, name: &str) -> Result<Rc<RefCell<dyn vfs::vnode>>, UNIXERROR> {
         return Err(UNIXERROR::EISFILE);
     }
-    fn read(&self, buf: &mut [u8], offset: usize) -> Result<usize, UNIXERROR> {
-        let mut size = offset + buf.len();
-        if buf.len() == 1 {
+    fn read(&self, buf: &mut [u8], offset: usize, count: usize) -> Result<usize, UNIXERROR> {
+        let mut size = count;
+        if buf.len() == 0 {
             return Err(UNIXERROR::EINVAL);
         }
-        if offset + buf.len() >= self.data.len() {
+        if (offset + count) > self.data.len() {
             size = self.data.len();
         }
         if self.data.len() == 0 {
@@ -75,27 +80,26 @@ impl vfs::vnode for tmpfsfile {
         buf[..pro.len()].copy_from_slice(pro);
         return Ok(size);
     }
-    fn write(&mut self, buf: &[u8], offset: usize) -> Result<usize, UNIXERROR> {
-        let size = offset + buf.len();
-        
-        if offset + buf.len() > self.data.len() {
-            
-            self.data.resize(offset + buf.len(), 0);
+    fn write(&mut self, buf: &[u8], offset: usize, count: usize) -> Result<usize, UNIXERROR> {
+        let size = count;
+        if buf.len() == 0 {
+            return Err(UNIXERROR::EINVAL);
+        }
+        if offset + buf.len() > self.data.len() as usize {
+            self.data.resize((offset + buf.len()), 0);
+            self.attrib.size = self.data.len();
         }
         if self.data.len() == 0 {
             return Err(UNIXERROR::EPERM);
         }
-        self.data.resize(size, 0);
-        self.data.copy_from_slice(&buf[offset..size]);
+        let pro = &buf[offset..size];
+        self.data.copy_from_slice(pro);
+
         // SO EASY
         return Ok(size);
     }
-    fn is_symlink(&self) -> Result<bool, UNIXERROR> {
-        Ok(self.symlink)
-    }
-    fn set_symlink(&mut self, bo: bool) -> Result<(), UNIXERROR> {
-        self.symlink = bo;
-        Ok(())
+    fn get_attrib(&self) -> Result<&vfs::vnodeattributetable, UNIXERROR> {
+        Ok(&self.attrib)
     }
 }
 use alloc::string::ToString;
@@ -105,7 +109,6 @@ impl vfs::vnode for tmpfsdir {
         let ifeelsick = Rc::new(RefCell::new(tmpfsfile::default()));
         dir.insert(name.to_string(), ifeelsick.clone());
         return Ok(ifeelsick);
-
     }
     fn lookup(&self, child: &str) -> Result<Rc<RefCell<dyn vfs::vnode>>, UNIXERROR> {
         if self.files.contains_key(child) {
@@ -120,19 +123,15 @@ impl vfs::vnode for tmpfsdir {
         let ifeelsick = Rc::new(RefCell::new(tmpfsdir::default()));
         dir.insert(String::from(name), ifeelsick.clone());
         return Ok(ifeelsick);
-        
     }
-    fn read(&self, buf: &mut [u8], offset: usize) -> Result<usize, UNIXERROR> {
+    fn read(&self, buf: &mut [u8], offset: usize, count: usize) -> Result<usize, UNIXERROR> {
         return Err(UNIXERROR::EISDIR);
     }
-    fn write(&mut self, buf: &[u8], offset: usize) -> Result<usize, UNIXERROR> {
+    fn write(&mut self, buf: &[u8], offset: usize, count: usize) -> Result<usize, UNIXERROR> {
         return Err(UNIXERROR::EISDIR);
     }
-    fn is_symlink(&self) -> Result<bool, UNIXERROR> {
-        return Err(UNIXERROR::EISDIR);
-    }
-    fn set_symlink(&mut self, bo: bool) -> Result<(), UNIXERROR> {
-        return Err(UNIXERROR::EISDIR);
+    fn get_attrib(&self) -> Result<&vnodeattributetable, UNIXERROR> {
+        Ok(&self.attrib)
     }
 }
 // pub struct tmpfsreal;
@@ -158,7 +157,7 @@ impl vfs::vnode for tmpfsdir {
 //             }
 //         }
 //         }
-        
+
 //     }
 //     fn v_lookup(&mut self, v: *mut vnode, part: &str, l: &mut Option<&mut vnode>) -> UNIXERROR {
 //         unsafe {
@@ -168,7 +167,7 @@ impl vfs::vnode for tmpfsdir {
 //                 }
 //                 super::vfs::vnodetype::FILE => {
 //                     let dir = (*v).data as *mut tmpfsdir;
-                    
+
 //                         let mut current = (*dir).head.as_mut(); // Start with the head of the list
 //                         while let Some(t) = current {
 //                             if t.name == part {
@@ -178,7 +177,7 @@ impl vfs::vnode for tmpfsdir {
 //                             current = t.next.as_mut(); // Move to the next node in the list
 //                         }
 //                         return UNIXERROR::ENOENT;
-                    
+
 //                 }
 //                 super::vfs::vnodetype::SYMLINK => {
 //                     return UNIXERROR::ENOENT;
@@ -186,7 +185,7 @@ impl vfs::vnode for tmpfsdir {
 //             }
 //         }
 //         }
-            
+
 //     fn v_rdwr(&mut self, v: *mut vnode, sizeofbuf: usize, offset: usize, buf: &mut u8, rw: i32) -> Result<usize, UNIXERROR> {
 //         match rw {
 //             0 => {
@@ -219,7 +218,7 @@ impl vfs::vnode for tmpfsdir {
 //                         // align doesnt matter anyway
 //                         (*file).data = Some(alloc::alloc::alloc_zeroed(Layout::from_size_align(sizeofbuf + offset, 4096).unwrap()));
 //                         (*file).size = sizeofbuf + offset;
-    
+
 //                     }
 //                     else if sizeofbuf + offset > (*file).size {
 //                         (*file).data = Some(alloc::alloc::realloc(
@@ -229,30 +228,30 @@ impl vfs::vnode for tmpfsdir {
 //                     (*file).data.unwrap().copy_from(*buf as *mut u8, sizeofbuf);
 //                     return Ok(sizeofbuf);
 //                 }
-                
+
 //             },
 //             _ => {
 //                 return Err(UNIXERROR::EINVAL); // Invalid Arugment
 //             }
 //         }
-        
+
 //     }
 //     fn v_create(&mut self, v: *mut vnode, name: &str, result: &mut Option<*mut vnode>) -> UNIXERROR {
 //         use alloc::string::ToString;
 //         unsafe {
 //             if (*v).flags == vnodetype::DIRECTORY {
 //                 let dir = (*v).data as *mut tmpfsdir;
-                
+
 //                     match &(*dir).head {
 //                         Some(_) => {
 //                             let mut o = Box::new(tmpfsdirentry {
 //                                 name: name.to_string(),
 //                                 next: None,
-//                                 vnode: 
+//                                 vnode:
 //                                     vnode {
 //                                         ops: Box::new(tmpfsreal),
 //                                         flags: vnodetype::FILE,
-//                                         data: Box::into_raw(Box::new(tmpfsfile 
+//                                         data: Box::into_raw(Box::new(tmpfsfile
 //                                         {
 //                                             size: 0,
 //                                             data: None
@@ -263,20 +262,20 @@ impl vfs::vnode for tmpfsdir {
 //                                 o.next = Some((*dir).head.take().unwrap());
 //                                 *result = Some(&mut o.vnode as *mut vnode);
 //                                 (*dir).head = Some(o);
-                                
+
 //                                 return UNIXERROR::ESUCCESS;
-                            
+
 //                             },
-                        
+
 //                         None => {
 //                             let mut o = Box::new(tmpfsdirentry {
 //                                 name: name.to_string(),
 //                                 next: None,
-//                                 vnode: 
+//                                 vnode:
 //                                     vnode {
 //                                         ops: Box::new(tmpfsreal),
 //                                         flags: vnodetype::FILE,
-//                                         data: Box::into_raw(Box::new(tmpfsfile 
+//                                         data: Box::into_raw(Box::new(tmpfsfile
 //                                         {
 //                                             size: 0,
 //                                             data: None
@@ -284,37 +283,36 @@ impl vfs::vnode for tmpfsdir {
 //                                     }
 //                                 }
 //                                 );
-                                
-                                
+
 //                                 *result = Some(addr_of_mut!(o.vnode) as *mut vnode);
 //                                 (*dir).head = Some(o);
 //                                 return UNIXERROR::ESUCCESS;
 //                         }
 //                     }
-                
+
 //             }
 //             else {
 //                 return UNIXERROR::EINVAL;
 //             }
 //         }
-        
+
 //     }
 //     fn v_mkdir(&mut self, v: *mut vnode, name: &str, resilt: &mut Option<*mut vnode>) -> UNIXERROR {
 //         use alloc::string::ToString;
 //         unsafe {
 //             if (*v).flags == vnodetype::DIRECTORY {
 //                 let dir = (*v).data as *mut tmpfsdir;
-               
+
 //                     match &(*dir).head {
 //                         Some(_) => {
 //                             let mut o = Box::new(tmpfsdirentry {
 //                                 name: name.to_string(),
 //                                 next: None,
-//                                 vnode: 
+//                                 vnode:
 //                                     vnode {
 //                                         ops: Box::new(tmpfsreal),
 //                                         flags: vnodetype::DIRECTORY,
-//                                         data: Box::into_raw(Box::new(tmpfsdir 
+//                                         data: Box::into_raw(Box::new(tmpfsdir
 //                                         {
 //                                             head: None
 //                                         })) as *mut u8
@@ -324,28 +322,27 @@ impl vfs::vnode for tmpfsdir {
 //                                 o.next = Some((*dir).head.take().unwrap());
 //                                 *resilt = Some(&mut o.vnode as *mut vnode);
 //                                 (*dir).head = Some(o);
-                                
+
 //                                 return UNIXERROR::ESUCCESS;
-                            
+
 //                             },
-                        
+
 //                         None => {
 //                             let mut o = Box::new(tmpfsdirentry {
 //                                 name: name.to_string(),
 //                                 next: None,
-//                                 vnode: 
+//                                 vnode:
 //                                     vnode {
 //                                         ops: Box::new(tmpfsreal),
 //                                         flags: vnodetype::DIRECTORY,
-//                                         data: Box::into_raw(Box::new(tmpfsdir 
+//                                         data: Box::into_raw(Box::new(tmpfsdir
 //                                         {
 //                                             head: None
 //                                         })) as *mut u8
 //                                     }
 //                                 }
 //                                 );
-                                
-                                
+
 //                                 *resilt = Some(&mut o.vnode as *mut vnode);
 //                                 (*dir).head = Some(o);
 //                                 return UNIXERROR::ESUCCESS;
@@ -356,7 +353,7 @@ impl vfs::vnode for tmpfsdir {
 //                 return UNIXERROR::EINVAL;
 //             }
 //         }
-        
+
 //     }
 //     fn v_getdataraw(&mut self, v: *mut vnode) -> Option<*mut u8> {
 //         unsafe {
