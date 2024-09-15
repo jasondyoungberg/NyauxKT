@@ -60,13 +60,17 @@ unsafe extern "C" fn kmain() -> ! {
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
         if let Some(framebuffer) = framebuffer_response.framebuffers().next() {
-            TERM.lock().init_basic(framebuffer);
+            TERM.lock().init_basic(&framebuffer);
             NyauxKT::mem::gdt::init_gdt();
             NyauxKT::mem::phys::PhysicalAllocator::new();
             
+            
+            NyauxKT::mem::virt::PageMap::new_inital();
+            
+            TERM.lock().deinit();
+            TERM.lock().init(&framebuffer);
             println!("PMM [{}]", "Okay".bright_green());
             println!("GDT [{}]", "Okay".bright_green());
-            NyauxKT::mem::virt::PageMap::new_inital();
             println!("VMM [{}]", "Okay".bright_green());
             InterruptManager::start_idt();
             println!("IDT [{}]", "Okay".bright_green());
@@ -76,7 +80,9 @@ unsafe extern "C" fn kmain() -> ! {
                 hpet_addr_virt: 0,
                 time_per_tick_hpet: 0,
             };
-
+            
+            println!("Welcome to Nyaux!.");
+            
             let mut x = ACPIMANAGER::new();
 
             cpu.init_lapic();
@@ -85,6 +91,10 @@ unsafe extern "C" fn kmain() -> ! {
             apic_init();
             println!("USTAR [{}]", "Okay".bright_green());
             println!("APIC [{}]", "Okay".bright_green());
+            
+
+            
+            
             
             
         }

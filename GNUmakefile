@@ -116,6 +116,7 @@ $(IMAGE_NAME).iso: limine/limine kernel
 	cp -v background.bmp iso_root/boot/
 	tar -H ustar -cf initramfs.tar sysroot/*
 	cp -v initramfs.tar iso_root/boot/
+	cp -v font.F16 iso_root/boot/
 	xorriso -as mkisofs -b boot/limine/limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		--efi-boot boot/limine/limine-uefi-cd.bin \

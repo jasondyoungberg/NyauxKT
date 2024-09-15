@@ -18,6 +18,8 @@ bitflags! {
         const KTUSERMODE = 1 << 2;
         const KTWRITETHROUGH = 1 << 3;
         const KTCACHEDISABLE = 1 << 4;
+        const KTPATBIT = 1 << 7;
+        
     }
 }
 #[derive(Debug)]
@@ -392,7 +394,7 @@ impl PageMap {
                 | EntryType::ACPI_RECLAIMABLE
                 | EntryType::USABLE
                 | EntryType::BOOTLOADER_RECLAIMABLE
-                | EntryType::FRAMEBUFFER
+                
                 | EntryType::KERNEL_AND_MODULES
                 | EntryType::RESERVED => {
                     if i.entry_type == EntryType::RESERVED {
@@ -408,6 +410,23 @@ impl PageMap {
                                 + (e * 4096) as u64,
                             i.base + (e * 4096) as u64,
                             VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits(),
+                        )
+                        .unwrap()
+                    }
+                    hhdm_pages += page_amount;
+                },
+                EntryType::FRAMEBUFFER => {
+                    
+                    let page_amount = super::phys::align_up(i.length as usize, 4096) / 4096;
+
+                    for e in 0..page_amount {
+                        q.map(
+                            HDDM_OFFSET.get_response().unwrap().offset()
+                                + i.base
+                                + (e * 4096) as u64,
+                            i.base + (e * 4096) as u64,
+                            // enable wc for sped
+                            VMMFlags::KTPRESENT.bits() | VMMFlags::KTWRITEALLOWED.bits() | VMMFlags::KTPATBIT.bits() | VMMFlags::KTWRITETHROUGH.bits(),
                         )
                         .unwrap()
                     }

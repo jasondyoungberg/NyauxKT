@@ -11,6 +11,7 @@ use limine::request::ModuleRequest;
 use limine::response::ModuleResponse;
 use spin::mutex::Mutex;
 
+
 extern crate alloc;
 use crate::TERM;
 const BG: u32 = 0x000000;
@@ -31,15 +32,17 @@ pub enum UNIXERROR
     EISFILE, // is a file
     ENOSYS
 }
+
 pub struct NyauxTerm {
     ctx: Option<*mut flanterm_bindings::flanterm_context>,
 }
+
 unsafe impl Send for NyauxTerm {}
 impl NyauxTerm {
     pub fn new_none() -> Mutex<Self> {
         Mutex::new(NyauxTerm { ctx: None })
     }
-    pub fn init_basic(&mut self, f: Framebuffer) {
+    pub fn init_basic(&mut self, f: &Framebuffer) {
         unsafe {
             let ctx = flanterm_bindings::flanterm_fb_init(
                 None,
@@ -68,6 +71,45 @@ impl NyauxTerm {
                 0,
                 0,
                 0,
+            );
+            self.ctx = Some(ctx);
+        }
+    }
+    pub fn deinit(&mut self) {
+        
+        unsafe {
+            ((*self.ctx.unwrap()).deinit.unwrap())(self.ctx.unwrap(), None);
+        }
+    }
+    pub fn init(&mut self, f: &Framebuffer) {
+        unsafe {
+            let ctx = flanterm_bindings::flanterm_fb_init(
+                None,
+                None,
+                f.addr() as *mut u32,
+                f.width().try_into().unwrap(),
+                f.height().try_into().unwrap(),
+                f.pitch().try_into().unwrap(),
+                f.red_mask_size().into(),
+                f.red_mask_shift().into(),
+                f.green_mask_size().into(),
+                f.green_mask_shift().into(),
+                f.blue_mask_size().into(),
+                f.blue_mask_shift().into(),
+                core::ptr::null_mut(),
+                core::ptr::null_mut(),
+                core::ptr::null_mut(),
+                &mut BG as *mut u32,
+                &mut FG as *mut u32,
+                core::ptr::null_mut(),
+                core::ptr::null_mut(),
+                get_limine_file("font").unwrap().addr() as *mut _,
+                8,
+                16,
+                1,
+                1,
+                1,
+                10,
             );
             self.ctx = Some(ctx);
         }

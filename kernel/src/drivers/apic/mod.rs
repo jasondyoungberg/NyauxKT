@@ -1,4 +1,6 @@
 use hashbrown::HashMap;
+use owo_colors::OwoColorize;
+use uacpi::sys::{acpi_entry_hdr, ACPI_MADT_ENTRY_TYPE_INTERRUPT_SOURCE_OVERRIDE, ACPI_MADT_ENTRY_TYPE_IOAPIC};
 use uacpi::{
     table_find_by_signature, MadtIoapic, MadtIrqSourceOverride, MADT_SIGNATURE
 };
@@ -45,4 +47,26 @@ static mut apicdriv: Option<SystemAPIC> = None;
 pub fn apic_init() {
     let mut table: *mut uacpi::Madt =  table_find_by_signature(MADT_SIGNATURE).unwrap().get_virt_addr() as *mut uacpi::Madt;
     println!("got table");
+    unsafe {
+        let length_of_entries = (*table).hdr.length as usize - size_of_val(&*table);
+        println!("{}: LENGTH OF ENTRIES IN MADT {}", "APIC".bright_red(), length_of_entries);
+        let mut offset = 0;
+        while offset < length_of_entries {
+            let entry_hdr = *((*table).entries.as_mut_ptr().add(offset / size_of::<acpi_entry_hdr>()));
+            println!("entry with type {}", entry_hdr.type_);
+            match entry_hdr.type_ as u32 {
+                ACPI_MADT_ENTRY_TYPE_INTERRUPT_SOURCE_OVERRIDE => {
+                    println!("{}: feet is good vibe is good", "APIC".bright_red());
+                },
+                ACPI_MADT_ENTRY_TYPE_IOAPIC => {
+                    println!("{}: found IOAPIC", "APIC".bright_red());
+                },
+                _ => {
+                    
+                }
+            }
+            offset += entry_hdr.length as usize;
+            println!("offset is now {offset}");
+        }
+    }
 }
