@@ -94,9 +94,7 @@ impl LAPIC for CPU {
     }
 }
     fn init_lapic(&mut self) {
-        let addr = rdmsr(0x1b);
-
-        self.lapic_addr = (addr & 0xfffff000) + HDDM_OFFSET.get_response().unwrap().offset();
+        
         // map lapic
 
         println!("addr of lapic for cpu: {:#x}", self.lapic_addr);
@@ -114,7 +112,7 @@ impl LAPIC for CPU {
                     CPU::init_hpet();
                 }
                 
-                CPU::init_hpet();
+                
                 // 0x100 enables the interrupt, 33 is the interrupt number for a surprious interrupt
                 self.write_lapic_register(0xf0, 0x100 | 33);
                 // divide by 4

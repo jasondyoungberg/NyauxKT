@@ -44,7 +44,7 @@ unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
 
-    use NyauxKT::{drivers::apic::apic_init, fs::USTAR::ustarinit, serial_println};
+    use NyauxKT::{cpu::init_smp, drivers::apic::apic_init, fs::USTAR::ustarinit, serial_println};
     assert!(BASE_REVISION.is_supported());
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
@@ -76,6 +76,7 @@ unsafe extern "C" fn kmain() -> ! {
             println!("APIC [{}]", "Okay".bright_green());
             
             serial_println!("Everything is {}", "Okay".bright_green());
+            init_smp();
             
             
             
