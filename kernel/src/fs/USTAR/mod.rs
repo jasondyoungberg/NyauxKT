@@ -133,12 +133,14 @@ struct UStarHeader {
     filenameprefix: [u8; 155],
 }
 use alloc::rc::Rc;
+use alloc::sync::Arc;
+use spin::Mutex;
 use core::cell::RefCell;
 pub fn ustarinit() {
     let q = get_limine_file("initramfs");
     unsafe {
         CUR_VFS = Some(vfs::vfs::default());
-        CUR_VFS.as_mut().unwrap().vnode = Some(Rc::new(RefCell::new(tmpfsdir::default())))
+        CUR_VFS.as_mut().unwrap().vnode = Some(Arc::new(Mutex::new(tmpfsdir::default())))
     }
     let mut cur_dir = unsafe { &mut CUR_VFS.as_mut().unwrap().vnode };
     if let Some(tar) = q {
@@ -162,12 +164,12 @@ pub fn ustarinit() {
                             get_list(okkkk).last().unwrap()
                         );
                         for i in get_list(okkkk) {
-                            let res = cur_dir.as_mut().unwrap().borrow_mut().lookup(i);
+                            let res = cur_dir.as_mut().unwrap().lock().lookup(i);
                             if let Ok(ress) = res {
                                 *cur_dir = Some(ress);
                             }
                         }
-                        if let Ok(gotyou) = cur_dir.as_mut().unwrap().borrow_mut().create(okkkk) {
+                        if let Ok(gotyou) = cur_dir.as_mut().unwrap().lock().create(okkkk) {
                             println!("made file! writing data...");
                             let mut v = [0; 12];
                             v.copy_from_slice(&(*e).filesize);
@@ -223,12 +225,12 @@ pub fn ustarinit() {
                             get_list(okkkk).last().unwrap()
                         );
                         for i in get_list(okkkk) {
-                            let res = cur_dir.as_mut().unwrap().borrow_mut().lookup(i);
+                            let res = cur_dir.as_mut().unwrap().lock().lookup(i);
                             if let Ok(ress) = res {
                                 *cur_dir = Some(ress);
                             }
                         }
-                        cur_dir.as_mut().unwrap().borrow_mut().mkdir(okkkk).unwrap();
+                        cur_dir.as_mut().unwrap().lock().mkdir(okkkk).unwrap();
                     }
                     b'6' => {
                         println!("pipe")

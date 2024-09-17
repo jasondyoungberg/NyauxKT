@@ -1,5 +1,6 @@
 use core::ffi::c_void;
-
+use crate::sched::scheduletask;
+#[allow(named_asm_labels)]
 use crate::{
     cpu::{lapic::LAPIC, CPU},
     mem::phys::HDDM_OFFSET,
@@ -40,64 +41,64 @@ struct IDTR {
 }
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-struct Registers {
+pub struct Registers {
     // Pushed by wrapper
-    int: usize,
+    pub int: usize,
 
     // Pushed by push_gprs in crate::arch::x86_64
-    r15: usize,
-    r14: usize,
-    r13: usize,
-    r12: usize,
-    r11: usize,
-    r10: usize,
-    r9: usize,
-    r8: usize,
-    rbp: usize,
-    rdi: usize,
-    rsi: usize,
-    rdx: usize,
-    rcx: usize,
-    rbx: usize,
-    rax: usize,
+    pub r15: usize,
+    pub r14: usize,
+    pub r13: usize,
+    pub r12: usize,
+    pub r11: usize,
+    pub r10: usize,
+    pub r9: usize,
+    pub r8: usize,
+    pub rbp: usize,
+    pub rdi: usize,
+    pub rsi: usize,
+    pub rdx: usize,
+    pub rcx: usize,
+    pub rbx: usize,
+    pub rax: usize,
 
     // Pushed by interrupt
-    rip: usize,
-    cs: usize,
-    rflags: usize,
-    rsp: usize,
-    ss: usize,
+    pub rip: usize,
+    pub cs: usize,
+    pub rflags: usize,
+    pub rsp: usize,
+    pub ss: usize,
 }
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Registers_Exception {
     // Pushed by wrapper
-    int: usize,
+    pub int: usize,
 
     // Pushed by push_gprs in crate::arch::x86_64
-    r15: usize,
-    r14: usize,
-    r13: usize,
-    r12: usize,
-    r11: usize,
-    r10: usize,
-    r9: usize,
-    r8: usize,
-    rbp: usize,
-    rdi: usize,
-    rsi: usize,
-    rdx: usize,
-    rcx: usize,
-    rbx: usize,
-    rax: usize,
+    pub r15: usize,
+    pub r14: usize,
+    pub r13: usize,
+    pub r12: usize,
+    pub r11: usize,
+    pub r10: usize,
+    pub r9: usize,
+    pub r8: usize,
+    pub rbp: usize,
+    pub rdi: usize,
+    pub rsi: usize,
+    pub rdx: usize,
+    pub rcx: usize,
+    pub rbx: usize,
+    pub rax: usize,
 
     // Pushed by interrupt
-    error_code: usize,
-    rip: usize,
-    cs: usize,
-    rflags: usize,
-    rsp: usize,
-    ss: usize,
+    pub error_code: usize,
+    pub rip: usize,
+    pub cs: usize,
+    pub rflags: usize,
+    pub rsp: usize,
+    pub ss: usize,
 }
 extern "C" fn exception_handler(registers: u64) {
     let got_registers = unsafe { *(registers as *mut Registers_Exception) };
@@ -107,14 +108,26 @@ extern "C" fn exception_handler(registers: u64) {
     );
 }
 #[no_mangle]
-pub extern "C" fn scheduler(registers: u64) {
+pub extern "C" fn scheduler(registers: u64) -> *mut Registers_Exception{
+    
+    unsafe {
+        core::arch::asm!("cli");
+    }
     let got_registers = unsafe { *(registers as *mut Registers_Exception) };
-
     let mut addr = rdmsr(0x1b);
     addr = addr & 0xfffff000;
     addr = addr + HDDM_OFFSET.get_response().unwrap().offset();
-
+    let q = scheduletask((registers as *mut Registers_Exception));
     CPU::send_lapic_eoi(addr);
+    unsafe {
+        core::arch::asm!("sti");
+    }
+    if let Some(h) = q {
+        return h;
+    }
+    else {
+        return registers as *mut Registers_Exception;
+    }
 }
 // #[no_mangle]
 // pub extern "C" fn test(registers: u64) {
@@ -258,13 +271,84 @@ macro_rules! exception_function_no_error {
         }
     };
 }
+macro_rules! exception_function_no_error_sched {
+    ($code:expr, $handler:ident, $meow:ident) => {
+
+        #[naked]
+        #[no_mangle]
+        extern "C" fn $handler() {
+
+            unsafe {
+                core::arch::asm!(
+                    
+                    "push 0x0",
+                    "cmp qword ptr [rsp + 16], 0x43",
+                    "jne 2f",
+                    "swapgs",
+                    "2:",
+                    "push rax",
+                    "push rbx",
+                    "push rcx",
+                    "push rdx",
+                    "push rsi",
+                    "push rdi",
+                    "push rbp",
+                    "push r8",
+                    "push r9",
+                    "push r10",
+                    "push r11",
+                    "push r12",
+                    "push r13",
+                    "push r14",
+                    "push r15",
+                    "push {0}",
+                    "mov rdi, rsp",
+                    "call {1}",
+                    "mov rsp, rax",
+                    "add rsp, 8",
+
+                    "pop r15",
+                    "pop r14",
+                    "pop r13",
+                    "pop r12",
+                    "pop r11",
+                    "pop r10",
+                    "pop r9",
+                    "pop r8",
+                    "pop rbp",
+                    "pop rdi",
+                    "pop rsi",
+                    "pop rdx",
+                    "pop rcx",
+                    "pop rbx",
+                    "pop rax",
+                    "add rsp, 8",
+                    "cmp qword ptr [rsp + 16], 0x43",
+                    "jne 3f",
+                    "swapgs",
+                    "3:",
+                    "iretq",
+                    
+                    
+                    const $code,
+                    sym $meow,
+                    options(noreturn)
+                );
+            };
+
+
+
+
+        }
+    };
+}
 
 exception_function_no_error!(0x00, div_error, exception_handler);
 exception_function_no_error!(0x06, invalid_opcode, exception_handler);
 exception_function!(0x08, double_fault);
 exception_function!(0x0D, general_protection_fault);
 exception_function!(0x0E, page_fault);
-exception_function_no_error!(34, schede, scheduler);
+exception_function_no_error_sched!(34, schede, scheduler);
 // exception_function_no_error!(47, haha, test);
 
 static mut IDTR: IDTR = IDTR { offset: 0, size: 0 };

@@ -56,7 +56,7 @@ unsafe extern "C" fn kmain() -> ! {
     // All limine requests must also be referenced in a called function, otherwise they may be
     // removed by the linker.
 
-    use NyauxKT::{cpu::init_smp, drivers::apic::apic_init, fs::USTAR::ustarinit, serial_println};
+    use NyauxKT::{cpu::init_smp, drivers::apic::apic_init, fs::{self, USTAR::ustarinit}, sched, serial_println};
     assert!(BASE_REVISION.is_supported());
 
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
@@ -66,7 +66,7 @@ unsafe extern "C" fn kmain() -> ! {
             NyauxKT::mem::phys::PhysicalAllocator::new();
 
             NyauxKT::mem::virt::PageMap::new_inital();
-
+            
             TERM.lock().deinit();
             TERM.lock().init(&framebuffer);
             println!("PMM [{}]", "Okay".bright_green());
@@ -85,7 +85,15 @@ unsafe extern "C" fn kmain() -> ! {
             println!("APIC [{}]", "Okay".bright_green());
 
             serial_println!("Everything is {}", "Okay".bright_green());
+            core::arch::asm!("cli");
+            sched::sched_init();
+            fs::devfs::devfs_init();
+            println!("dev fs created");
+            serial_println!("dev fs created!");
+            
             init_smp();
+            core::arch::asm!("sti");
+            
         }
     }
 
@@ -96,7 +104,10 @@ unsafe extern "C" fn kmain() -> ! {
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
     //TERM.lock().clear_screen(0xFF0000);
+
+    use NyauxKT::serial_println;
     println!("KT Kernel Panic!: {}", _info);
+    serial_println!("NT Kernel Panic!: {}", _info);
     hcf();
 }
 pub fn hcf() -> ! {

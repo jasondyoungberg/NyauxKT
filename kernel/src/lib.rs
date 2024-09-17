@@ -15,6 +15,7 @@
 )]
 #![feature(const_nonnull_new)]
 #![feature(const_option)]
+#![feature(rustc_private)]
 #![feature(naked_functions)]
 use lazy_static::lazy_static;
 use spin::Mutex;

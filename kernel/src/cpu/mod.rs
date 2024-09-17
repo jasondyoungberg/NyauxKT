@@ -33,7 +33,8 @@ impl CPU {
 static mut CPUS: Option<Vec<CPU>> = None;
 
 unsafe extern "C" fn init_cpu(e: &limine::smp::Cpu) -> ! {
-    println!("hi from {}", e.lapic_id);
+    core::arch::asm!("cli");
+    
     let mut q: Option<&mut CPU> = None;
     for i in CPUS.as_mut().unwrap().iter_mut() {
         if i.lapic_id == e.lapic_id {
@@ -46,8 +47,10 @@ unsafe extern "C" fn init_cpu(e: &limine::smp::Cpu) -> ! {
     }
     init_gdt();
     crate::idt::InterruptManager::start_idt();
+    
+    crate::sched::ITIS.as_mut().unwrap().create_queue(e.lapic_id);
     q.unwrap().init_lapic();
-    println!("idt is okay");
+    core::arch::asm!("sti");
     unsafe {
         loop {
             core::arch::asm!("hlt");
@@ -69,7 +72,7 @@ pub fn init_smp() {
             if w.lapic_id == 0 {
                 w.init_lapic();
             }
-            println!("Created CPU Structure {:?}", w);
+            
             CPUS.as_mut().unwrap().push(w);
         }
     }

@@ -24,13 +24,13 @@ impl LAPIC for CPU {
         }
     }
     fn write_lapic_register(&self, reg: u64, val: u32) {
-        println!("writing");
+        
         unsafe {
             core::ptr::write_volatile((self.lapic_addr + reg) as *mut u32, val);
         }
     }
     fn read_lapic_register(&self, reg: u64) -> u32 {
-        println!("reading");
+        
         unsafe {
             return core::ptr::read_volatile((self.lapic_addr + reg) as *mut u32) as u32;
         }

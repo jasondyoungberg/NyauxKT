@@ -6,6 +6,9 @@ use vfs::{resolve_path_absolute, vnode};
 
 pub mod USTAR;
 pub mod tmpfs;
+pub mod devfs;
+use alloc::sync::Arc;
+use spin::Mutex;
 pub mod vfs;
 trait Stream {
     fn read(&self, buf: &mut [u8], sizeofbut: usize) -> Result<usize, UNIXERROR>;
@@ -14,7 +17,7 @@ trait Stream {
 }
 struct VNodeStream {
     offset: usize,
-    vnode: Rc<RefCell<dyn vnode>>,
+    vnode: Arc<Mutex<dyn vnode>>,
 }
 #[derive(Clone)]
 pub enum VNODEFLAGS {
@@ -30,7 +33,7 @@ pub enum WHENCE {
 }
 impl Stream for VNodeStream {
     fn read(&self, buf: &mut [u8], sizeofbut: usize) -> Result<usize, UNIXERROR> {
-        let res = self.vnode.borrow_mut().read(buf, self.offset, sizeofbut);
+        let res = self.vnode.lock().read(buf, self.offset, sizeofbut);
         return res;
     }
     fn seek(&mut self, offset: isize, wh: WHENCE) -> Result<usize, UNIXERROR> {
@@ -41,28 +44,29 @@ impl Stream for VNodeStream {
             WHENCE::SET => self.offset = (self.offset as usize),
             WHENCE::END => {
                 self.offset =
-                    (self.vnode.borrow_mut().get_attrib().unwrap().size as isize + offset) as usize
+                    (self.vnode.lock().get_attrib().unwrap().size as isize + offset) as usize
             }
         }
         Ok(self.offset)
     }
     fn write(&self, buf: &[u8], sizeofbut: usize) -> Result<usize, UNIXERROR> {
-        let res = self.vnode.borrow_mut().write(buf, self.offset, sizeofbut);
+        let res = self.vnode.lock().write(buf, self.offset, sizeofbut);
         return res;
     }
 }
+
 pub struct PosixFile {
-    vnode: Rc<RefCell<dyn vnode>>,
+    vnode: Arc<Mutex<dyn vnode>>,
     flags: VNODEFLAGS,
     stream: VNodeStream,
 }
 impl PosixFile {
     pub fn open(path: &str) -> Result<Self, UNIXERROR> {
-        let f: Result<Rc<RefCell<dyn vnode>>, UNIXERROR> = resolve_path_absolute(path, false);
+        let f = resolve_path_absolute(path, false);
 
         match f {
             Ok(h) => {
-                let fla = h.borrow_mut().get_attrib().unwrap().TYPE.clone();
+                let fla = h.lock().get_attrib().unwrap().TYPE.clone();
                 return Ok(PosixFile {
                     vnode: h.clone(),
                     flags: fla,
